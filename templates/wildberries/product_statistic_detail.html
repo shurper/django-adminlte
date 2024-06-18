@@ -1,0 +1,38 @@
+<!-- wildberries/templates/wildberries/product_statistic_detail.html -->
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+{% block title %} Статистика платформы "{{ platform_statistic.platform_type_display }}" {% endblock title %}
+{% block extrastyle %}
+<!-- дополнительные стили, если нужно -->
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Просмотры</th>
+                <th>Клики</th>
+                <th>CTR</th>
+                <th>CPC</th>
+                <th>Сумма</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.views }}</td>
+                <td>{{ product.clicks }}</td>
+                <td>{{ product.ctr }}</td>
+                <td>{{ product.cpc }}</td>
+                <td>{{ product.sum }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!-- wildberries/templates/wildberries/campaign_detail.html -->
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+{% block title %} {{ campaign.name }} {% endblock title %}
+{% block extrastyle %}
+  <!-- дополнительные стили, если нужно -->
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h3>Параметры {% if campaign.is_active %} <span style="float:right" class="badge bg-success">Идут показы</span> {% endif %}</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Views</th>
+                    <th>Clicks</th>
+                    <th>CTR</th>
+                    <th>CPC</th>
+                    <th>Sum</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in statistics %}
+                <tr>
+                    <td>{{ stat.date }}</td>
+                    <td>{{ stat.views }}</td>
+                    <td>{{ stat.clicks }}</td>
+                    <td>{{ stat.ctr }}</td>
+                    <td>{{ stat.cpc }}</td>
+                    <td>{{ stat.sum }}</td>
+                    <td>
+                        <a href="{% url 'platform_statistic_detail' stat.id %}" class="btn btn-primary">View Platform Statistics</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Параметры</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Предметная группа</th>
+                    <th>Ставка в Каталоге (СРМ)</th>
+                    <th>Ставка в Поиске (СРМ)</th>
+                    <th>Разделы каталога</th>
+                    <th>Артикулы WB</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in campaign.united_params.all %}
+                <tr>
+                    <td>{{ param.subject.name }}</td>
+                    <td>{{ param.catalog_cpm }}</td>
+                    <td>{{ param.search_cpm }}</td>
+                    <td>
+                        {% for menu in param.menus.all %}
+                            {{ menu.name }}<br>{% if not forloop.last %} {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for nm in param.nms %}
+                            {{ nm }}<br>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Данные Кампании</h3>
+        <table class="table">
+            <tr>
+                <th>Время начала</th>
+                <td>{{ campaign.start_time }}</td>
+            </tr>
+            <tr>
+                <th>Время завершения</th>
+                <td>{{ campaign.end_time }}</td>
+            </tr>
+            <tr>
+                <th>Время создания</th>
+                <td>{{ campaign.create_time }}</td>
+            </tr>
+            <tr>
+                <th>Время последнего изменения</th>
+                <td>{{ campaign.change_time }}</td>
+            </tr>
+            <tr>
+                <th>Фиксированные фразы</th>
+                <td>{{ campaign.search_pluse_state|yesno:"включены,отключены" }}</td>
+            </tr>
+            <tr>
+                <th>Дневной бюджет</th>
+                <td>{{ campaign.daily_budget }}</td>
+            </tr>
+            <tr>
+                <th>ID Кампании</th>
+                <td>{{ campaign.advert_id }}</td>
+            </tr>
+            <tr>
+                <th>Статус</th>
+                <td>{{ campaign.get_status_display }}</td>
+            </tr>
+            <tr>
+                <th>Тип</th>
+                <td>{{ campaign.get_type_display }}</td>
+            </tr>
+            <tr>
+                <th>Тип оплаты</th>
+                <td>{{ campaign.payment_type }}</td>
+            </tr>
+        </table>
+
+
+    </div>
+</div>
+{% endblock %}

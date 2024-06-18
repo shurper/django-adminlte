@@ -7,17 +7,14 @@
 {% block content %}
 <div class="login-box">
   <div class="login-logo">
-    <a href="/"><b>Admin</b>LTE</a>
+    <a href="/">Tonantis Metrics</a>
   </div>
   <!-- /.login-logo -->
   <div class="card">
     <div class="card-body login-card-body">
       <p class="login-box-msg">
-        <span>USER: test / Pass12__</span>
-        <br />
-        <span>ADMIN: admin / Pass12__</span>
+        У Вас уже есть аккаунт?
       </p>
-
       <form method="post">
         {% csrf_token %}
 
@@ -43,13 +40,13 @@
             <div class="icheck-primary">
               <input type="checkbox" id="remember">
               <label for="remember">
-                Remember Me
+                Запомнить меня
               </label>
             </div>
           </div>
           <!-- /.col -->
           <div class="col-4">
-            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            <button type="submit" class="btn btn-primary btn-block">Войти</button>
           </div>
           <!-- /.col -->
         </div>
@@ -69,9 +66,9 @@
       <!-- /.social-auth-links -->
 
       <p class="mt-5 mb-2 text-center">
-        <a href="{% url 'password_reset' %}">Reset Pass</a>
-        &bull;
-        <a href="{% url 'register' %}" class="text-center">Sign UP</a>
+        <a href="{% url 'password_reset' %}">Сброс пароля</a>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <a href="{% url 'register' %}" class="text-center">Зарегистрироваться</a>
       </p>
     </div>
     <!-- /.login-card-body -->

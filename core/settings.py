@@ -14,6 +14,9 @@ import os, random, string
 from pathlib import Path
 from dotenv import load_dotenv
 from str2bool import str2bool
+from celery import Celery
+from celery.schedules import crontab
+
 
 load_dotenv()  # take environment variables from .env.
 
@@ -53,8 +56,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_celery_beat",
 
     "home",
+    "wildberries",
+
 ]
 
 MIDDLEWARE = [
@@ -142,7 +148,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ru"
 
 TIME_ZONE = "UTC"
 
@@ -150,6 +156,10 @@ USE_I18N = True
 
 USE_TZ = True
 
+
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
@@ -171,3 +181,58 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = '/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Включение отладочного вывода для базы данных в settings.py
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'django.log'),  # Укажите путь к лог-файлу
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'celery_tasks': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+#Запуск Celery Beat вместе с worker'ом:
+#bash
+# celery -A django-adminlte worker -l info
+# celery -A core worker -l info -B
+#TODO: обработать устойчивость воркера, на случай его неожиданного завершения, чтобы все работало всегда
+CELERY_BEAT_SCHEDULE = {
+    'update_campaigns_every_hour': {
+        'task': 'wildberries.tasks.update_all_stores_campaigns',
+        'schedule': crontab(minute='*/1', hour='*/1'),  # Периодичность каждый час
+    },
+    'collect-campaign-statistics-every-hour': {
+        'task': 'wildberries.tasks.collect_campaign_statistics',
+        'schedule': crontab(minute='*/1', hour='*/1'),
+    },
+}
