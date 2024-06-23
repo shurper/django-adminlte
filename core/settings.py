@@ -235,4 +235,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'wildberries.tasks.collect_campaign_statistics',
         'schedule': crontab(minute='*/1', hour='*/1'),
     },
+    'collect-keyword-statistics-every-minute': {
+        'task': 'wildberries.tasks.collect_keyword_statistics',
+        'schedule': 600.0,  # every 10 minutes
+    },
+    'collect-auto-campaign-statistics-every-minute': {
+        'task': 'wildberries.tasks.collect_auto_campaign_statistics',
+        'schedule': 60.0,  # every minute
+    },
 }

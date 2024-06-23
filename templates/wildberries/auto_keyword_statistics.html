@@ -1,0 +1,37 @@
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+{% block title %} Статистика платформы "{{ platform_statistic.platform_type_display }}" {% endblock title %}
+{% block extrastyle %}
+<!-- дополнительные стили, если нужно -->
+{% endblock extrastyle %}
+
+
+{% block content %}
+<div class="container">
+    <h2>Auto Campaign Keyword Statistics for Campaign: {{ campaign.name }}</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date Recorded</th>
+                <th>Keyword</th>
+                <th>Views</th>
+                <th>Clicks</th>
+                <th>CTR</th>
+                <th>Sum</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in keyword_statistics %}
+            <tr>
+                <td>{{ stat.date_recorded }}</td>
+                <td>{{ stat.keyword }}</td>
+                <td>{{ stat.views }}</td>
+                <td>{{ stat.clicks }}</td>
+                <td>{{ stat.ctr }}</td>
+                <td>{{ stat.sum }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

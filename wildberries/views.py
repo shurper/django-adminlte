@@ -5,7 +5,8 @@ from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from wildberries.forms import SignUpForm, StoreForm
-from wildberries.models import Store, Campaign, CampaignStatistic, PlatformStatistic
+from wildberries.models import Store, Campaign, CampaignStatistic, PlatformStatistic, CampaignKeywordStatistic, \
+    KeywordData, AutoCampaignKeywordStatistic
 from wildberries.utils import fetch_and_save_campaigns
 
 
@@ -101,3 +102,23 @@ def product_statistic_detail(request, platform_statistic_id):
     platform_statistic = get_object_or_404(PlatformStatistic, id=platform_statistic_id)
     products = platform_statistic.products.all()
     return render(request, 'wildberries/product_statistic_detail.html', {'platform_statistic': platform_statistic, 'products': products})
+
+@login_required
+def keyword_statistics(request, campaign_id):
+    campaign = get_object_or_404(Campaign, id=campaign_id)
+    keyword_statistics = CampaignKeywordStatistic.objects.filter(campaign=campaign).order_by('-date_received')
+    keyword_data = KeywordData.objects.filter(campaign=campaign).first()
+    return render(request, 'wildberries/keyword_statistics.html', {
+        'campaign': campaign,
+        'keyword_statistics': keyword_statistics,
+        'keyword_data': keyword_data
+    })
+
+
+def auto_keyword_statistics(request, campaign_id):
+    campaign = get_object_or_404(Campaign, id=campaign_id)
+    keyword_statistics = AutoCampaignKeywordStatistic.objects.filter(campaign=campaign).order_by('-date_recorded')
+    return render(request, 'wildberries/auto_keyword_statistics.html', {
+        'campaign': campaign,
+        'keyword_statistics': keyword_statistics,
+    })

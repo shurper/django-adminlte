@@ -3,9 +3,11 @@ import logging
 
 from celery import shared_task
 
-from .utils import get_campaign_list, get_campaign_details, save_campaign_details, save_campaign_statistics
+from .utils import get_campaign_list, get_campaign_details, save_campaign_details, save_campaign_statistics, \
+    save_keyword_statistics, save_auto_campaign_statistics
 
 logger = logging.getLogger('celery_tasks')
+
 
 @shared_task
 def fetch_and_save_campaigns(store_id):
@@ -23,6 +25,7 @@ def fetch_and_save_campaigns(store_id):
             if campaign_details_data:
                 save_campaign_details(store, campaign_details_data)
                 logger.info(f'Saved campaign details for Store {store.name}')
+                # logger.info(f'Fetched data: {campaign_details_data}')
         else:
             logger.warning(f'No campaign data received for Store {store.name}')
     except Store.DoesNotExist:
@@ -43,3 +46,19 @@ def collect_campaign_statistics():
     active_stores = Store.objects.filter(status='active')
     for store in active_stores:
         save_campaign_statistics(store)
+
+
+@shared_task
+def collect_keyword_statistics():
+    from .models import Store
+    active_stores = Store.objects.filter(status='active')
+    for store in active_stores:
+        save_keyword_statistics(store)
+
+
+@shared_task
+def collect_auto_campaign_statistics():
+    from .models import Store
+    active_stores = Store.objects.filter(status='active')
+    for store in active_stores:
+        save_auto_campaign_statistics(store)

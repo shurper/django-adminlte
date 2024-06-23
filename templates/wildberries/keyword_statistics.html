@@ -1,0 +1,57 @@
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+{% block title %} Статистика платформы "{{ platform_statistic.platform_type_display }}" {% endblock title %}
+{% block extrastyle %}
+<!-- дополнительные стили, если нужно -->
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="container">
+    <h2>Keyword Statistics for Campaign: {{ campaign.name }}</h2>
+    <h3>Fixed Keywords: {{ keyword_data.fixed }}</h3>
+    <h4>Phrase</h4>
+    <ul>
+        {% for phrase in keyword_data.phrase %}
+        <li>{{ phrase }}</li>
+        {% endfor %}
+    </ul>
+    <h4>Strong</h4>
+    <ul>
+        {% for strong in keyword_data.strong %}
+        <li>{{ strong }}</li>
+        {% endfor %}
+    </ul>
+    <h4>Excluded</h4>
+    <ul>
+        {% for excluded in keyword_data.excluded %}
+        <li>{{ excluded }}</li>
+        {% endfor %}
+    </ul>
+    <h4>Pluse</h4>
+    <ul>
+        {% for pluse in keyword_data.pluse %}
+        <li>{{ pluse }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Keyword Statistics Over Time</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date Received</th>
+                <th>Keyword</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in keyword_statistics %}
+            <tr>
+                <td>{{ stat.date_received }}</td>
+                <td>{{ stat.keyword }}</td>
+                <td>{{ stat.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

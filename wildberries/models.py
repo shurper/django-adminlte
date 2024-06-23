@@ -1,6 +1,7 @@
 # wildberries/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class Store(models.Model):
@@ -77,6 +78,14 @@ class Subject(models.Model):
         return self.name
 
 
+class Set(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255, verbose_name='Название сета')
+
+    def __str__(self):
+        return self.name
+
+
 class Menu(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255, verbose_name='Название меню')
@@ -91,7 +100,12 @@ class UnitedParam(models.Model):
     search_cpm = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Search CPM')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     menus = models.ManyToManyField(Menu)
-    nms = models.JSONField(verbose_name='NMS')  # Хранение NMS в виде JSON
+    sets = models.ManyToManyField(Set)
+    nms = models.JSONField(verbose_name='NMS', default=list)
+    nmCPMs = models.JSONField(verbose_name='nmCPM', default=list)
+    active_carousel = models.BooleanField(default=False, verbose_name='Active Carousel')
+    active_recom = models.BooleanField(default=False, verbose_name='Active Recom')
+    active_booster = models.BooleanField(default=False, verbose_name='Active Booster')
 
     def __str__(self):
         return f'{self.campaign.name} - {self.subject.name}'
@@ -148,3 +162,31 @@ class ProductStatistic(models.Model):
     cr = models.FloatField()
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+
+class CampaignKeywordStatistic(models.Model):
+    campaign = models.ForeignKey(Campaign, related_name='keyword_statistics', on_delete=models.CASCADE)
+    keyword = models.CharField(max_length=255)
+    count = models.IntegerField()
+    date_received = models.DateTimeField(default=timezone.now)
+
+class KeywordData(models.Model):
+    campaign = models.ForeignKey(Campaign, related_name='keyword_data', on_delete=models.CASCADE)
+    phrase = models.JSONField()
+    strong = models.JSONField()
+    excluded = models.JSONField()
+    pluse = models.JSONField()
+    fixed = models.BooleanField()
+
+
+class AutoCampaignKeywordStatistic(models.Model):
+    campaign = models.ForeignKey(Campaign, related_name='auto_keyword_statistics', on_delete=models.CASCADE)
+    keyword = models.CharField(max_length=255)
+    views = models.IntegerField()
+    clicks = models.IntegerField()
+    ctr = models.FloatField()
+    sum = models.FloatField()
+    date_recorded = models.DateTimeField()
+
+    class Meta:
+        unique_together = ('campaign', 'keyword', 'date_recorded')

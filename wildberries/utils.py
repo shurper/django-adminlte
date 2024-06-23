@@ -2,7 +2,10 @@
 from datetime import date
 
 import requests
-from .models import Store, Campaign, Subject, Menu, UnitedParam, CampaignStatistic, PlatformStatistic, ProductStatistic
+from django.utils import timezone
+
+from .models import Store, Campaign, Subject, Menu, UnitedParam, CampaignStatistic, PlatformStatistic, ProductStatistic, \
+    Set, KeywordData, CampaignKeywordStatistic, AutoCampaignKeywordStatistic
 
 
 def get_campaign_list(store):
@@ -19,6 +22,7 @@ def get_campaign_list(store):
         print(f'Error fetching campaign list: {response.json()}')
         return None
 
+
 def get_campaign_details(store, advert_ids):
     url = 'https://advert-api.wb.ru/adv/v1/promotion/adverts?order=create&direction=asc'
     headers = {
@@ -33,69 +37,410 @@ def get_campaign_details(store, advert_ids):
         print(f'Error fetching campaign details: {response.json()}')
         return None
 
+
 def save_campaign_details(store, campaign_data):
     for campaign in campaign_data:
-        if 'unitedParams' not in campaign:
-            print('No unitedParams in loaded data. Not saved')
-            continue
-
         advert_id = campaign['advertId']
         name = campaign['name']
         start_time = campaign['startTime']
         end_time = campaign['endTime']
         create_time = campaign['createTime']
         change_time = campaign['changeTime']
-        search_pluse_state = campaign.get('searchPluseState', False)
         daily_budget = campaign['dailyBudget']
         status = campaign['status']
         type = campaign['type']
         payment_type = campaign['paymentType']
 
-        campaign_obj, created = Campaign.objects.update_or_create(
-            advert_id=advert_id,
-            defaults={
-                'store': store,
-                'name': name,
-                'start_time': start_time,
-                'end_time': end_time,
-                'create_time': create_time,
-                'change_time': change_time,
-                'search_pluse_state': search_pluse_state,
-                'daily_budget': daily_budget,
-                'status': status,
-                'type': type,
-                'payment_type': payment_type
-            }
-        )
-
-        for param in campaign['unitedParams']:
-            catalog_cpm = param['catalogCPM']
-            search_cpm = param['searchCPM']
-            subject_data = param['subject']
-            menus_data = param['menus']
-            nms = param['nms']
-
-            subject_obj, _ = Subject.objects.get_or_create(
-                id=subject_data['id'],
-                defaults={'name': subject_data['name']}
-            )
-
-            united_param_obj, _ = UnitedParam.objects.update_or_create(
-                campaign=campaign_obj,
-                subject=subject_obj,
+        # Обработка "поиск + каталог" кампании
+        if type == 9:
+            search_pluse_state = campaign.get('searchPluseState', False)
+            united_params = campaign.get('unitedParams', [])
+            campaign_obj, created = Campaign.objects.update_or_create(
+                advert_id=advert_id,
                 defaults={
-                    'catalog_cpm': catalog_cpm,
-                    'search_cpm': search_cpm,
-                    'nms': nms
+                    'store': store,
+                    'name': name,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'create_time': create_time,
+                    'change_time': change_time,
+                    'search_pluse_state': search_pluse_state,
+                    'daily_budget': daily_budget,
+                    'status': status,
+                    'type': type,
+                    'payment_type': payment_type
                 }
             )
 
-            for menu_data in menus_data:
-                menu_obj, _ = Menu.objects.get_or_create(
-                    id=menu_data['id'],
-                    defaults={'name': menu_data['name']}
+            for param in united_params:
+                catalog_cpm = param['catalogCPM']
+                search_cpm = param['searchCPM']
+                subject_data = param.get('subject', {})
+                if subject_data.get('name', '') is '':
+                    continue
+                menus_data = param.get('menus', [])
+                nms = param.get('nms', [])
+
+                subject_obj, _ = Subject.objects.get_or_create(
+                    id=subject_data['id'],
+                    defaults={'name': subject_data['name']}
                 )
-                united_param_obj.menus.add(menu_obj)
+
+                united_param_obj, created = UnitedParam.objects.update_or_create(
+                    campaign=campaign_obj,
+                    subject=subject_obj,
+                    defaults={
+                        'catalog_cpm': catalog_cpm,
+                        'search_cpm': search_cpm,
+                        'nms': nms
+                    }
+                )
+
+                # Используйте set() для установки значений ManyToMany поля
+                menu_objs = []
+                for menu_data in menus_data:
+                    menu_obj, _ = Menu.objects.get_or_create(
+                        id=menu_data['id'],
+                        defaults={'name': menu_data['name']}
+                    )
+                    menu_objs.append(menu_obj)
+                united_param_obj.menus.set(menu_objs)
+
+        # Обработка "автоматическая кампания"
+        elif type == 8:
+            auto_params = campaign.get('autoParams', {})
+            subject_data = auto_params.get('subject', {})
+            if subject_data.get('name', '') is '':
+                continue
+            sets_data = auto_params.get('sets', [])
+            active = auto_params.get('active', {})
+            nms = auto_params.get('nms', [])
+            nmCPM = auto_params.get('nmCPM', [])
+
+            campaign_obj, created = Campaign.objects.update_or_create(
+                advert_id=advert_id,
+                defaults={
+                    'store': store,
+                    'name': name,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'create_time': create_time,
+                    'change_time': change_time,
+                    'daily_budget': daily_budget,
+                    'status': status,
+                    'type': type,
+                    'payment_type': payment_type
+                }
+            )
+            # "autoParams": {
+            #     "subject": {
+            #         "name": "Сумки спортивные",
+            #         "id": 7640
+            #     },
+            #     "sets": [
+            #         {
+            #             "name": "для мужчин",
+            #             "id": 6107
+            #         }
+            #     ],
+            #     "nms": [
+            #         234269557
+            #     ],
+            #     "active": {
+            #         "carousel": true,
+            #         "recom": false,
+            #         "booster": true
+            #     },
+            #     "nmCPM": [
+            #         {
+            #             "nm": 234269557,
+            #             "cpm": 125
+            #         }
+            #     ]
+            # }
+            subject_obj, _ = Subject.objects.get_or_create(
+                id=subject_data['id'],
+                defaults={'name': subject_data.get('name', 'Скоро появится')}
+            )
+
+            united_param_obj, created = UnitedParam.objects.update_or_create(
+                campaign=campaign_obj,
+                subject=subject_obj,
+                defaults={
+                    'catalog_cpm': 0,
+                    'search_cpm': 0,
+                    'nms': nms,
+                    'nmCPMs': nmCPM,  # Добавлено для полноты
+                }
+            )
+
+            set_objs = []
+            for set_data in sets_data:
+                set_obj, _ = Set.objects.get_or_create(
+                    id=set_data['id'],
+                    defaults={'name': set_data['name']}
+                )
+                set_objs.append(set_obj)
+            united_param_obj.sets.set(set_objs)
+
+            # Обновление активного состояния кампании
+            united_param_obj.active_carousel = active.get('carousel', False)
+            united_param_obj.active_recom = active.get('recom', False)
+            united_param_obj.active_booster = active.get('booster', False)
+            united_param_obj.save()
+
+        else:
+            print(f'Unsupported campaign type {type}')
+
+
+# def save_campaign_details(store, campaign_data):
+#     for campaign in campaign_data:
+#         advert_id = campaign['advertId']
+#         name = campaign['name']
+#         start_time = campaign['startTime']
+#         end_time = campaign['endTime']
+#         create_time = campaign['createTime']
+#         change_time = campaign['changeTime']
+#         daily_budget = campaign['dailyBudget']
+#         status = campaign['status']
+#         type = campaign['type']
+#         payment_type = campaign['paymentType']
+#
+#         # Обработка "поиск + каталог" кампании
+#         if type == 9:
+#             search_pluse_state = campaign.get('searchPluseState', False)
+#             united_params = campaign.get('unitedParams', [])
+#             campaign_obj, created = Campaign.objects.update_or_create(
+#                 advert_id=advert_id,
+#                 defaults={
+#                     'store': store,
+#                     'name': name,
+#                     'start_time': start_time,
+#                     'end_time': end_time,
+#                     'create_time': create_time,
+#                     'change_time': change_time,
+#                     'search_pluse_state': search_pluse_state,
+#                     'daily_budget': daily_budget,
+#                     'status': status,
+#                     'type': type,
+#                     'payment_type': payment_type
+#                 }
+#             )
+#
+#             for param in united_params:
+#                 catalog_cpm = param['catalogCPM']
+#                 search_cpm = param['searchCPM']
+#                 subject_data = param['subject']
+#                 menus_data = param.get('menus', [])
+#                 sets_data = auto_params.get('sets', [])
+#                 nms = param.get('nms', [])
+#
+#                 subject_obj, _ = Subject.objects.get_or_create(
+#                     id=subject_data['id'],
+#                     defaults={'name': subject_data['name']}
+#                 )
+#
+#                 united_param_obj, created = UnitedParam.objects.update_or_create(
+#                     campaign=campaign_obj,
+#                     subject=subject_obj,
+#                     defaults={
+#                         'catalog_cpm': catalog_cpm,
+#                         'search_cpm': search_cpm,
+#                         'nms': nms
+#                     }
+#                 )
+#
+#                 # Используйте set() для установки значений ManyToMany поля
+#                 menu_objs = []
+#                 for menu_data in menus_data:
+#                     menu_obj, _ = Menu.objects.get_or_create(
+#                         id=menu_data['id'],
+#                         defaults={'name': menu_data['name']}
+#                     )
+#                     menu_objs.append(menu_obj)
+#                 united_param_obj.menus.set(menu_objs)
+#
+#                 # Используйте set() для установки значений ManyToMany поля
+#                 set_objs = []
+#                 for set_data in sets_data:
+#                     set_obj, _ = Set.objects.get_or_create(
+#                         id=set_data['id'],
+#                         defaults={'name': set_data['name']}
+#                     )
+#                     set_objs.append(set_obj)
+#                 united_param_obj.sets.set(set_objs)
+#
+#         # Обработка "автоматическая кампания"
+#         elif type == 8:
+#             auto_params = campaign.get('autoParams', {})
+#             subject_data = auto_params.get('subject', {})
+#             nms = auto_params.get('nms', [])
+#             sets_data = auto_params.get('sets', [])
+#             active = auto_params.get('active', {})
+#
+#             campaign_obj, created = Campaign.objects.update_or_create(
+#                 advert_id=advert_id,
+#                 defaults={
+#                     'store': store,
+#                     'name': name,
+#                     'start_time': start_time,
+#                     'end_time': end_time,
+#                     'create_time': create_time,
+#                     'change_time': change_time,
+#                     'daily_budget': daily_budget,
+#                     'status': status,
+#                     'type': type,
+#                     'payment_type': payment_type
+#                 }
+#             )
+#
+#             subject_obj, _ = Subject.objects.get_or_create(
+#                 id=subject_data['id'],
+#                 defaults={'name': subject_data.get('name', '')}
+#             )
+#
+#             united_param_obj, created = UnitedParam.objects.update_or_create(
+#                 campaign=campaign_obj,
+#                 subject=subject_obj,
+#                 defaults={
+#                     'catalog_cpm': 0,
+#                     'search_cpm': 0,
+#                     'nms': nms
+#                 }
+#             )
+#
+#             # Используйте set() для установки значений ManyToMany поля
+#             set_objs = []
+#             for set_data in sets_data:
+#                 set_obj, _ = Set.objects.get_or_create(
+#                     id=set_data['id'],
+#                     defaults={'name': set_data['name']}
+#                 )
+#                 set_objs.append(set_obj)
+#             united_param_obj.sets.set(set_objs)
+#
+#             # Обновление активного состояния кампании
+#             united_param_obj.active_carousel = active.get('carousel', False)
+#             united_param_obj.active_recom = active.get('recom', False)
+#             united_param_obj.active_booster = active.get('booster', False)
+#             united_param_obj.save()
+
+
+# def save_campaign_details(store, campaign_data):
+#     for campaign in campaign_data:
+#         advert_id = campaign['advertId']
+#         name = campaign['name']
+#         start_time = campaign['startTime']
+#         end_time = campaign['endTime']
+#         create_time = campaign['createTime']
+#         change_time = campaign['changeTime']
+#         daily_budget = campaign['dailyBudget']
+#         status = campaign['status']
+#         type = campaign['type']
+#         payment_type = campaign['paymentType']
+#
+#         # Обработка "поиск + каталог" кампании
+#         if type == 9:
+#             search_pluse_state = campaign.get('searchPluseState', False)
+#             united_params = campaign.get('unitedParams', [])
+#             campaign_obj, created = Campaign.objects.update_or_create(
+#                 advert_id=advert_id,
+#                 defaults={
+#                     'store': store,
+#                     'name': name,
+#                     'start_time': start_time,
+#                     'end_time': end_time,
+#                     'create_time': create_time,
+#                     'change_time': change_time,
+#                     'search_pluse_state': search_pluse_state,
+#                     'daily_budget': daily_budget,
+#                     'status': status,
+#                     'type': type,
+#                     'payment_type': payment_type
+#                 }
+#             )
+#
+#             for param in united_params:
+#                 catalog_cpm = param['catalogCPM']
+#                 search_cpm = param['searchCPM']
+#                 subject_data = param['subject']
+#                 menus_data = param['menus']
+#                 nms = param['nms']
+#
+#                 subject_obj, _ = Subject.objects.get_or_create(
+#                     id=subject_data['id'],
+#                     defaults={'name': subject_data['name']}
+#                 )
+#
+#                 united_param_obj, _ = UnitedParam.objects.update_or_create(
+#                     campaign=campaign_obj,
+#                     subject=subject_obj,
+#                     defaults={
+#                         'catalog_cpm': catalog_cpm,
+#                         'search_cpm': search_cpm,
+#                         'nms': nms
+#                     }
+#                 )
+#
+#                 for menu_data in menus_data:
+#                     menu_obj, _ = Menu.objects.get_or_create(
+#                         id=menu_data['id'],
+#                         defaults={'name': menu_data['name']}
+#                     )
+#                     united_param_obj.menus.add(menu_obj)
+#
+#         # Обработка "автоматическая кампания"
+#         elif type == 8:
+#             auto_params = campaign.get('autoParams', {})
+#             subject_data = auto_params.get('subject', {})
+#             nms = auto_params.get('nms', [])
+#             sets_data = auto_params.get('sets', {})
+#             active = auto_params.get('active', {})
+#
+#             campaign_obj, created = Campaign.objects.update_or_create(
+#                 advert_id=advert_id,
+#                 defaults={
+#                     'store': store,
+#                     'name': name,
+#                     'start_time': start_time,
+#                     'end_time': end_time,
+#                     'create_time': create_time,
+#                     'change_time': change_time,
+#                     'daily_budget': daily_budget,
+#                     'status': status,
+#                     'type': type,
+#                     'payment_type': payment_type
+#                 }
+#             )
+#
+#             subject_obj, _ = Subject.objects.get_or_create(
+#                 id=subject_data['id'],
+#                 defaults={'name': subject_data.get('name', '')}
+#             )
+#
+#             united_param_obj, _ = UnitedParam.objects.update_or_create(
+#                 campaign=campaign_obj,
+#                 subject=subject_obj,
+#                 defaults={
+#                     'catalog_cpm': 0,
+#                     'search_cpm': 0,
+#                     'nms': nms,
+#                     'menus': [],  # Меню для авто-кампании может отсутствовать
+#                 }
+#             )
+#
+#             for set_data in sets_data:
+#                 set_obj, _ = Set.objects.get_or_create(
+#                     id=set_data['id'],
+#                     defaults={'name': set_data['name']}
+#                 )
+#                 united_param_obj.sets.add(set_obj)
+#
+#             # Обновление активного состояния кампании
+#             united_param_obj.active_carousel = active.get('carousel', False)
+#             united_param_obj.active_recom = active.get('recom', False)
+#             united_param_obj.active_booster = active.get('booster', False)
+#             united_param_obj.save()
 
 def fetch_and_save_campaigns(store_id):
     try:
@@ -128,10 +473,12 @@ def get_campaign_statistics(store, advert_ids):
         print(f'Error fetching campaign statistics: {response.json()}')
         return None
 
+
 def save_campaign_statistics(store):
     campaigns = Campaign.objects.filter(store=store)
     advert_ids = [campaign.advert_id for campaign in campaigns]
     statistics = get_campaign_statistics(store, advert_ids)
+    print(statistics)
     if statistics:
         for stat in statistics:
             campaign = Campaign.objects.get(advert_id=stat['advertId'])
@@ -186,5 +533,78 @@ def save_campaign_statistics(store):
                             'cr': product['cr'],
                             'shks': product['shks'],
                             'sum_price': product['sum_price']
+                        }
+                    )
+
+
+
+def get_keyword_statistics(store, campaign_id):
+    url = f'https://advert-api.wb.ru/adv/v1/stat/words?id={campaign_id}'
+    headers = {
+        'accept': 'application/json',
+        'Authorization': store.wildberries_api_key,
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f'Error fetching keyword statistics: {response.json()}')
+        return None
+
+def save_keyword_statistics(store):
+    campaigns = Campaign.objects.filter(store=store, type=9)
+    for campaign in campaigns:
+        statistics = get_keyword_statistics(store, campaign.advert_id)
+        if statistics:
+            words_data = statistics['words']
+            KeywordData.objects.update_or_create(
+                campaign=campaign,
+                defaults={
+                    'phrase': words_data['phrase'],
+                    'strong': words_data['strong'],
+                    'excluded': words_data['excluded'],
+                    'pluse': words_data['pluse'],
+                    'fixed': words_data['fixed'],
+                }
+            )
+            for keyword_stat in words_data['keywords']:
+                CampaignKeywordStatistic.objects.create(
+                    campaign=campaign,
+                    keyword=keyword_stat['keyword'],
+                    count=keyword_stat['count'],
+                    date_received=timezone.now()
+                )
+
+
+def get_auto_campaign_statistics(store, campaign_id):
+    url = f'https://advert-api.wb.ru/adv/v2/auto/daily-words?id={campaign_id}'
+    headers = {
+        'accept': 'application/json',
+        'Authorization': store.wildberries_api_key,
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f'Error fetching auto campaign statistics: {response.json()}')
+        return None
+
+def save_auto_campaign_statistics(store):
+    campaigns = Campaign.objects.filter(store=store, type=8)
+    for campaign in campaigns:
+        statistics = get_auto_campaign_statistics(store, campaign.advert_id)
+        if statistics:
+            for stat_day in statistics:
+                date_recorded = stat_day['date']
+                for stat in stat_day['stat']:
+                    AutoCampaignKeywordStatistic.objects.update_or_create(
+                        campaign=campaign,
+                        keyword=stat['keyword'],
+                        date_recorded=date_recorded,
+                        defaults={
+                            'views': stat['views'],
+                            'clicks': stat['clicks'],
+                            'ctr': stat['ctr'],
+                            'sum': stat['sum'],
                         }
                     )
