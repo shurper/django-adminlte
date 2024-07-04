@@ -1,4 +1,5 @@
 # wildberries/models.py
+from django.db.models import JSONField
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -7,7 +8,8 @@ from django.utils import timezone
 class Store(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, verbose_name='Название магазина в нашей системе')
-    wildberries_name = models.CharField(max_length=255, verbose_name='Название магазина в системе Wildberries', blank=True)
+    wildberries_name = models.CharField(max_length=255, verbose_name='Название магазина в системе Wildberries',
+                                        blank=True)
     wildberries_api_key = models.CharField(max_length=512, verbose_name='API ключ Wildberries')  # Увеличили размер поля
     STATUS_CHOICES = (
         ('active', 'Активный'),
@@ -25,7 +27,6 @@ class Store(models.Model):
 
 
 class Campaign(models.Model):
-
     STATUS_CHOICES = {
         -1: "Кампания в процессе удаления",
         4: "Готова к запуску",
@@ -125,8 +126,8 @@ class CampaignStatistic(models.Model):
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
 
-class PlatformStatistic(models.Model):
 
+class PlatformStatistic(models.Model):
     TYPE_CHOICES = {
         1: "Сайт",
         32: "Android",
@@ -147,6 +148,7 @@ class PlatformStatistic(models.Model):
 
     def platform_type_display(self):
         return self.TYPE_CHOICES.get(self.app_type, "Неизвестный тип")
+
 
 class ProductStatistic(models.Model):
     platform_statistic = models.ForeignKey(PlatformStatistic, related_name='products', on_delete=models.CASCADE)
@@ -170,6 +172,7 @@ class CampaignKeywordStatistic(models.Model):
     count = models.IntegerField()
     date_received = models.DateTimeField(default=timezone.now)
 
+
 class KeywordData(models.Model):
     campaign = models.ForeignKey(Campaign, related_name='keyword_data', on_delete=models.CASCADE)
     phrase = models.JSONField()
@@ -190,3 +193,88 @@ class AutoCampaignKeywordStatistic(models.Model):
 
     class Meta:
         unique_together = ('campaign', 'keyword', 'date_recorded')
+
+
+class AutoBidderSettings(models.Model):
+    campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE)
+    product_id = models.IntegerField(blank=True, null=True)
+    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    destination = models.IntegerField(blank=True, null=True)
+    keyword = models.CharField(max_length=255, blank=True, null=True)
+    keywords_monitoring = models.JSONField(verbose_name='keywords_monitoring', default=list)
+    destination_monitoring = models.JSONField(verbose_name='destination_monitoring', default=list)
+    max_bid = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    is_enabled = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"AutoBidderSettings for campaign {self.campaign}"
+
+    def save(self, *args, **kwargs):
+        # Get the current instance before saving to compare
+        try:
+            current_instance = AutoBidderSettings.objects.get(pk=self.pk)
+        except AutoBidderSettings.DoesNotExist:
+            current_instance = None
+
+        super().save(*args, **kwargs)
+
+        if current_instance and current_instance.keyword != self.keyword:
+            PositionTrackingTask.objects.filter(campaign=self.campaign).delete()
+
+
+class PositionTrackingTask(models.Model):
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
+    product_id = models.IntegerField()
+    destination = models.IntegerField(null=True, blank=True)
+    keyword = models.CharField(max_length=255)
+    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    status = models.CharField(max_length=50,
+                              choices=[('request', 'Request'), ('in_progress', 'In Progress'), ('done', 'Done')])
+    actual_position = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class PositionRange(models.Model):
+    autobidder_settings = models.ForeignKey(AutoBidderSettings, on_delete=models.CASCADE,
+                                            related_name='position_ranges')
+    start_position = models.IntegerField()
+    end_position = models.IntegerField()
+    bid = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.start_position}-{self.end_position}: {self.bid}"
+
+
+class IntraDaySchedule(models.Model):
+    autobidder_settings = models.ForeignKey(AutoBidderSettings, on_delete=models.CASCADE,
+                                            related_name='intra_day_schedules')
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    def __str__(self):
+        return f"{self.start_time} - {self.end_time}"
+
+
+class WeeklySchedule(models.Model):
+    autobidder_settings = models.ForeignKey(AutoBidderSettings, on_delete=models.CASCADE,
+                                            related_name='weekly_schedules')
+    day_of_week = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.day_of_week
+
+
+class AutoBidderLog(models.Model):
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(default=timezone.now)
+    message = models.TextField()
+    keyword = models.TextField(null=True, blank=True)
+    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    destination = models.IntegerField(null=True, blank=True)
+    product_id = models.IntegerField(null=True, blank=True)
+    position = models.IntegerField(null=True, blank=True)
+    bid = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.timestamp} - {self.message}"

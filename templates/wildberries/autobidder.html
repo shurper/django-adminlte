@@ -1,0 +1,223 @@
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+
+{% block title %}Настройки AutoBidder для {{ campaign.name }}{% endblock title %}
+
+{% block extrastyle %}
+<!-- Additional styles if needed -->
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Form for creating/updating AutoBidder settings -->
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="create_settings" value="create_settings">
+            <input type="hidden" name="id" value="create_settings">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Настройки AutoBidder</h3>
+                </div>
+                <div class="card-body">
+                    {{ create_form.as_p }}
+                </div>
+                <div class="card-footer">
+                    <button type="submit" name="create_settings" class="btn btn-primary">Сохранить</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Position Ranges -->
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="position_ranges" value="position_ranges">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Диапазоны Позиции</h3>
+                </div>
+                <div class="card-body">
+                    <div id="position-ranges">
+                        {% for range in current_position_ranges %}
+                        <div class="form-group">
+                            {{ range.start_position.label_tag }} {{ range.start_position }}
+                            {{ range.end_position.label_tag }} {{ range.end_position }}
+                            {{ range.bid.label_tag }} {{ range.bid }}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="editRange({{ range.id }})">Редактировать</button>
+                            <button type="submit" name="delete_range" value="{{ range.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="new-position-ranges"></div>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addPositionRange()">+</button>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Сохранить Диапазоны</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Intra-Day Schedule -->
+        <form method="post">
+            {% csrf_token %}
+             <input type="hidden" name="intra_day_schedule" value="intra_day_schedule">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Внутридневное Расписание</h3>
+                </div>
+                <div class="card-body">
+                    <div id="intra-day-schedule">
+                        {% for schedule in current_intra_day_schedule %}
+                        <div class="form-group">
+                            {{ schedule.start_time.label_tag }} {{ schedule.start_time }}
+                            {{ schedule.end_time.label_tag }} {{ schedule.end_time }}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="editIntraDaySchedule({{ schedule.id }})">Редактировать</button>
+                            <button type="submit" name="delete_intra_day_schedule" value="{{ schedule.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="new-intra-day-schedule"></div>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addIntraDaySchedule()">+</button>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Сохранить Расписание</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Weekly Schedule -->
+        <form method="post">
+            {% csrf_token %}
+             <input type="hidden" name="weekly_schedule" value="weekly_schedule">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title">Еженедельное Расписание</h3>
+                </div>
+                <div class="card-body">
+                    <div id="weekly-schedule">
+                        {% for day in current_weekly_schedule %}
+                        <div class="form-group">
+                            {{ day.label_tag }} {{ day }}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="editWeeklySchedule({{ day.id }})">Редактировать</button>
+                            <button type="submit" name="delete_weekly_schedule" value="{{ day.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div id="new-weekly-schedule"></div>
+                    <button type="button" class="btn btn-success btn-sm" onclick="addWeeklySchedule()">+</button>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Сохранить Расписание</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Logs -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Логи AutoBidder</h3>
+            </div>
+            <div class="card-body">
+                <div id="logs">
+                    {% for log in logs %}
+                    <div>{{ log.timestamp }} - {{ log.message }} - {{ log.keyword }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addPositionRange() {
+        const container = document.getElementById('new-position-ranges');
+        const newRange = document.createElement('div');
+        newRange.classList.add('form-group');
+        newRange.innerHTML = `
+            <input type="text" name="start_position" placeholder="Start Position" class="form-control">
+            <input type="text" name="end_position" placeholder="End Position" class="form-control">
+            <input type="text" name="bid" placeholder="Bid" class="form-control">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">Удалить</button>
+        `;
+        container.appendChild(newRange);
+    }
+
+    function addIntraDaySchedule() {
+        const container = document.getElementById('new-intra-day-schedule');
+        const newSchedule = document.createElement('div');
+        newSchedule.classList.add('form-group');
+        newSchedule.innerHTML = `
+            <input type="text" name="start_time" placeholder="Start Time" class="form-control">
+            <input type="text" name="end_time" placeholder="End Time" class="form-control">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">Удалить</button>
+        `;
+        container.appendChild(newSchedule);
+    }
+
+    function addWeeklySchedule() {
+        const container = document.getElementById('new-weekly-schedule');
+        const newSchedule = document.createElement('div');
+        newSchedule.classList.add('form-group');
+        newSchedule.innerHTML = `
+            <input type="text" name="day_of_week" placeholder="Day" class="form-control">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeElement(this)">Удалить</button>
+        `;
+        container.appendChild(newSchedule);
+    }
+
+    function editRange(id) {
+        const start_position = prompt('Enter new start position:');
+        const end_position = prompt('Enter new end position:');
+        const bid = prompt('Enter new bid:');
+        if (start_position !== null && end_position !== null && bid !== null) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="edit_range" value="${id}">
+                <input type="hidden" name="start_position" value="${start_position}">
+                <input type="hidden" name="end_position" value="${end_position}">
+                <input type="hidden" name="bid" value="${bid}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function editIntraDaySchedule(id) {
+        const start_time = prompt('Enter new start time:');
+        const end_time = prompt('Enter new end time:');
+        if (start_time !== null && end_time !== null) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="edit_intra_day_schedule" value="${id}">
+                <input type="hidden" name="start_time" value="${start_time}">
+                <input type="hidden" name="end_time" value="${end_time}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function editWeeklySchedule(id) {
+        const day = prompt('Enter new day:');
+        if (day !== null) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="edit_weekly_schedule" value="${id}">
+                <input type="hidden" name="day_of_week" value="${day}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function removeElement(element) {
+        element.parentElement.remove();
+    }
+</script>
+{% endblock %}

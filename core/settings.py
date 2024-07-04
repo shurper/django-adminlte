@@ -57,13 +57,14 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_celery_beat",
-
+    'corsheaders',
     "home",
     "wildberries",
 
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -73,6 +74,37 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+#APPEND_SLASH = False
+
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+ALLOWED_HOSTS = ['wildberries.ru','127.0.0.1']
+
+# Специальный URL
+#CORS_URLS_REGEX = r'^/wildberries/api/observer/report$'
 
 ROOT_URLCONF = "core.urls"
 
@@ -201,12 +233,12 @@ LOGGING = {
     'loggers': {
         'django.db.backends': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': False,
         },
         'celery_tasks': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': True,
         },
     },
@@ -227,20 +259,24 @@ CELERY_TIMEZONE = 'UTC'
 # celery -A core worker -l info -B
 #TODO: обработать устойчивость воркера, на случай его неожиданного завершения, чтобы все работало всегда
 CELERY_BEAT_SCHEDULE = {
-    'update_campaigns_every_hour': {
+    'update_campaigns': {
         'task': 'wildberries.tasks.update_all_stores_campaigns',
-        'schedule': crontab(minute='*/1', hour='*/1'),  # Периодичность каждый час
+        'schedule': crontab(minute='*/1', hour='*/1'),
     },
-    'collect-campaign-statistics-every-hour': {
+    'collect-campaign-statistics': {
         'task': 'wildberries.tasks.collect_campaign_statistics',
         'schedule': crontab(minute='*/1', hour='*/1'),
     },
-    'collect-keyword-statistics-every-minute': {
+    'collect-keyword-statistics': {
         'task': 'wildberries.tasks.collect_keyword_statistics',
-        'schedule': 600.0,  # every 10 minutes
+        'schedule': 600.0,
     },
-    'collect-auto-campaign-statistics-every-minute': {
+    'collect-auto-campaign-statistics': {
         'task': 'wildberries.tasks.collect_auto_campaign_statistics',
-        'schedule': 60.0,  # every minute
+        'schedule': 60.0,
+    },
+    'run-autobidder': {
+        'task': 'wildberries.tasks.run_autobidder',
+        'schedule': 20.0,
     },
 }

@@ -8,6 +8,7 @@ from .models import Store, Campaign, Subject, Menu, UnitedParam, CampaignStatist
     Set, KeywordData, CampaignKeywordStatistic, AutoCampaignKeywordStatistic
 
 
+
 def get_campaign_list(store):
     url = 'https://advert-api.wb.ru/adv/v1/promotion/count'
     headers = {
@@ -588,6 +589,21 @@ def get_auto_campaign_statistics(store, campaign_id):
     else:
         print(f'Error fetching auto campaign statistics: {response.json()}')
         return None
+
+def update_bid(campaign, new_bid):
+    return True
+    response = requests.post(
+        'https://advert-api.wb.ru/adv/v0/cpm',
+        headers={'Authorization': f'Bearer {campaign.store.wildberries_api_key}'},
+        json={
+            'advertId': campaign.id,
+            'type': campaign.type,
+            'cpm': new_bid,
+            'param': campaign.united_params.subject.id,
+            'instrument': 6
+        }
+    )
+    return response
 
 def save_auto_campaign_statistics(store):
     campaigns = Campaign.objects.filter(store=store, type=8)

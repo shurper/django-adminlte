@@ -35,6 +35,7 @@
                         <a href="{% url 'platform_statistic_detail' stat.id %}" class="btn btn-primary">Глубже</a>
                         <a href="{% url 'keyword_statistics' campaign.id %}" class="btn btn-primary">По ключевым словам</a>
                         <a href="{% url 'auto_keyword_statistics' campaign.id %}" class="btn btn-primary">По ключевым словам (автокампании)</a>
+                        <a href="{% url 'autobidder_view' campaign.id %}" class="btn btn-primary">Автобиддер</a>
                     </td>
                 </tr>
                 {% endfor %}

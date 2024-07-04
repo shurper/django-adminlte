@@ -1,7 +1,7 @@
 # wildberries/urls.py
 from django.urls import path
 from . import views
-from .views import edit_store
+from .views import edit_store, autobidder_view, observer_get_task, observer_report_position
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -15,6 +15,10 @@ urlpatterns = [
     path('product_statistics/<int:platform_statistic_id>/', views.product_statistic_detail, name='product_statistic_detail'),
     path('keyword_statistics/<int:campaign_id>/', views.keyword_statistics, name='keyword_statistics'),
     path('auto_keyword_statistics/<int:campaign_id>/', views.auto_keyword_statistics, name='auto_keyword_statistics'),
+    path('autobidder/<int:campaign_id>/', autobidder_view, name='autobidder_view'),
+
+    path('api/observer/task/', observer_get_task, name='observer_get_task'),
+    path('api/observer/report/', observer_report_position, name='observer_report_position'),
     #path('store/<int:store_id>/store_campaigns/', views.store_campaigns, name='store_campaigns'),
    # path('campaign_list', views.campaign_list, name='campaign_list'),
 ]
