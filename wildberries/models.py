@@ -181,6 +181,12 @@ class KeywordData(models.Model):
     pluse = models.JSONField()
     fixed = models.BooleanField()
 
+    @classmethod
+    def get_fixed_keywords_choices(cls, campaign_id):
+        keywords = cls.objects.filter(campaign_id=campaign_id).values_list('pluse', flat=True)
+        flat_keywords = [item for sublist in keywords for item in sublist]
+        return [(keyword, keyword) for keyword in flat_keywords]
+
 
 class AutoCampaignKeywordStatistic(models.Model):
     campaign = models.ForeignKey(Campaign, related_name='auto_keyword_statistics', on_delete=models.CASCADE)
@@ -195,14 +201,17 @@ class AutoCampaignKeywordStatistic(models.Model):
         unique_together = ('campaign', 'keyword', 'date_recorded')
 
 
+from django.db import models
+from django.contrib.postgres.fields import ArrayField
+
 class AutoBidderSettings(models.Model):
     campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE)
     product_id = models.IntegerField(blank=True, null=True)
-    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    depth = models.IntegerField(blank=True, null=True, default=2)
     destination = models.IntegerField(blank=True, null=True)
     keyword = models.CharField(max_length=255, blank=True, null=True)
     keywords_monitoring = models.JSONField(verbose_name='keywords_monitoring', default=list)
-    destination_monitoring = models.JSONField(verbose_name='destination_monitoring', default=list)
+    destinations_monitoring = models.JSONField(verbose_name='destinations_monitoring', default=list)
     max_bid = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_enabled = models.BooleanField(default=True)
 
@@ -218,8 +227,10 @@ class AutoBidderSettings(models.Model):
 
         super().save(*args, **kwargs)
 
-        if current_instance and current_instance.keyword != self.keyword:
-            PositionTrackingTask.objects.filter(campaign=self.campaign).delete()
+        if current_instance:
+            if current_instance.keyword != self.keyword or current_instance.keywords_monitoring != self.keywords_monitoring or current_instance.destinations_monitoring != self.destinations_monitoring:
+                PositionTrackingTask.objects.filter(campaign=self.campaign).delete()
+
 
 
 class PositionTrackingTask(models.Model):
@@ -270,7 +281,7 @@ class AutoBidderLog(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     message = models.TextField()
     keyword = models.TextField(null=True, blank=True)
-    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    depth = models.IntegerField(blank=True, null=True, default=2)
     destination = models.IntegerField(null=True, blank=True)
     product_id = models.IntegerField(null=True, blank=True)
     position = models.IntegerField(null=True, blank=True)

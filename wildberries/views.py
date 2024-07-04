@@ -231,35 +231,54 @@ def autobidder_view(request, campaign_id):
 
 
 
+# @csrf_exempt
+# def observer_get_task(request):
+#     task = PositionTrackingTask.objects.filter(status='request').order_by('created_at').first()
+#     if task:
+#         task.status = 'in_progress'
+#         task.save()
+#         destination = task.destination
+#         return JsonResponse({
+#             destination: {
+#                 task.keyword: {
+#                     "items": [task.product_id],
+#                     "max_page": task.depth
+#                 }
+#             }
+#         })
+#     return JsonResponse({}, status=404)
+
+
 @csrf_exempt
 def observer_get_task(request):
-    task = PositionTrackingTask.objects.filter(status='request').order_by('created_at').first()
-    if task:
-        task.status = 'in_progress'
-        task.save()
-        destination = task.destination
-        return JsonResponse({
-            destination: {
-                task.keyword: {
-                    "items": [task.product_id],
-                    "max_page": task.depth
-                }
-            }
-        })
-        # return JsonResponse({
-        #     task.keyword: {
-        #         "items": [task.product_id],
-        #         "max_page": 2
-        #     }
-        # })
-        # # return JsonResponse({
-        #     'task_id': task.id,
-        #     'campaign_id': task.campaign_id,
-        #     'product_id': task.product_id,
-        #     'keyword': task.keyword
-        # })
-    return JsonResponse({}, status=404)
+    tasks = PositionTrackingTask.objects.filter(status='request').order_by('created_at')
 
+    if tasks.exists():
+        response_data = {}
+
+        for task in tasks:
+            destination = task.destination
+            keyword = task.keyword
+            product_id = task.product_id
+            depth = task.depth
+
+            if destination not in response_data:
+                response_data[destination] = {}
+
+            if keyword not in response_data[destination]:
+                response_data[destination][keyword] = {
+                    "items": [],
+                    "max_page": depth
+                }
+
+            response_data[destination][keyword]["items"].append(product_id)
+
+        # Обновляем статус всех задач
+        tasks.update(status='in_progress')
+        print(response_data)
+        return JsonResponse(response_data)
+
+    return JsonResponse({}, status=404)
 
 @csrf_exempt
 def observer_report_position(request):

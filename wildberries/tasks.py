@@ -132,6 +132,69 @@ def run_autobidder():
         task.save()
 
 
+@shared_task
+def run_monitoring():
+    print("run_monitoring is started")
+    from .models import AutoBidderSettings, PositionTrackingTask
+    now = timezone.now()
+    autobidders = AutoBidderSettings.objects.filter(is_enabled=True)
+
+    for autobidder in autobidders:
+        print(f"Monitoring for {autobidder.campaign.name} is running.")
+
+        if not is_within_schedule(autobidder, now):
+            print(f"Monitoring for {autobidder.campaign.name} is not within schedule. Rejected.")
+            continue
+
+        for keyword in autobidder.keywords_monitoring:
+            for destination in autobidder.destinations_monitoring:
+                # Try to retrieve an existing task in 'request' status
+                task = PositionTrackingTask.objects.filter(
+                    campaign=autobidder.campaign,
+                    keyword=keyword,
+                    destination=destination,
+                ).first()
+
+                if task is None:
+                    # Create a new task if no 'request' status task exists
+                    task = PositionTrackingTask.objects.create(
+                        campaign=autobidder.campaign,
+                        product_id=autobidder.product_id,
+                        keyword=keyword,
+                        destination=destination,
+                        status='request',
+                        depth=autobidder.depth
+                    )
+                    print(f"New PositionTrackingTask created for {autobidder.campaign.name} with keyword '{keyword}' and destination '{destination}'.")
+                else:
+                    print(f"Found existing PositionTrackingTask for {autobidder.campaign.name} with keyword '{keyword}' and destination '{destination}'.")
+
+                if task.status != 'done':
+                    print(f"Monitoring for {autobidder.campaign.name} is waiting for the watcher to be completed. Rejected.")
+                    continue
+
+                if task.actual_position is not None:
+                    from .models import AutoBidderLog
+                    AutoBidderLog.objects.create(
+                        campaign=autobidder.campaign,
+                        message=f"Position: {task.actual_position}",
+                        position=task.actual_position,
+                        bid=0,
+                        product_id=task.product_id,
+                        destination=task.destination,
+                        depth=task.depth,
+                        keyword=task.keyword
+                    )
+
+                # Update task details
+                task.product_id = autobidder.product_id
+                task.keyword = keyword
+                task.destination = destination
+                task.depth = autobidder.depth
+                task.status = 'request'
+                task.save()
+
+
 def is_within_schedule(autobidder, now):
     return True
     weekly_schedule = autobidder.weekly_schedule or []

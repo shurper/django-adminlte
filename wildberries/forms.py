@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from wildberries.models import Store, AutoBidderSettings, WeeklySchedule, IntraDaySchedule, PositionRange
+from wildberries.models import Store, AutoBidderSettings, WeeklySchedule, IntraDaySchedule, PositionRange, KeywordData
 from wildberries.utils import get_campaign_list
 
 
@@ -53,18 +53,37 @@ class WeeklyScheduleForm(forms.Form):
 
 
 class CreateAutoBidderSettingsForm(forms.ModelForm):
+    keywords_monitoring = forms.MultipleChoiceField(
+        choices=[],
+        widget=forms.SelectMultiple(attrs={'required': False})
+    )
+    destinations_monitoring = forms.MultipleChoiceField(
+        choices=[
+            (0, 'Не выбрано'),
+            (123585791, "Электросталь"),
+            (-5650614, "Сочи")
+        ],
+        widget=forms.SelectMultiple(attrs={'required': False})
+    )
+
     class Meta:
         model = AutoBidderSettings
-        fields = ['product_id', 'keyword', 'destination', 'max_bid', 'is_enabled', 'depth']
+        fields = ['product_id', 'keyword', 'destination', 'max_bid', 'is_enabled', 'depth', 'keywords_monitoring', 'destinations_monitoring']
         widgets = {
             'product_id': forms.NumberInput(attrs={'required': True}),
             'keyword': forms.TextInput(attrs={'required': True}),
             'max_bid': forms.NumberInput(attrs={'required': True, 'step': '0.01'}),
             'depth': forms.NumberInput(attrs={'required': True, 'step': '1'}),
-            'destination': forms.Select(choices=[(0, 'Не выбрано'),(123585791, "Электросталь"), (-5650614, "Сочи")]),
+            'destination': forms.Select(choices=[(0, 'Не выбрано'), (123585791, "Электросталь"), (-5650614, "Сочи")]),
             'is_enabled': forms.Select(choices=[(True, "Включен"), (False, "Выключен")]),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Retrieve keyword data for the campaign and populate the keywords_monitoring choices
+        campaign_id = self.initial.get('campaign_id') or self.instance.campaign_id
+        if campaign_id:
+            self.fields['keywords_monitoring'].choices = KeywordData.get_fixed_keywords_choices(campaign_id)
 
 class PositionRangeForm(forms.ModelForm):
     class Meta:
