@@ -3,10 +3,12 @@ import json
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 
 from wildberries.forms import SignUpForm, StoreForm, PositionRangeForm, IntraDayScheduleForm, WeeklyScheduleForm, \
@@ -299,4 +301,105 @@ def observer_report_position(request):
         task.save()
         return JsonResponse({'message': 'Position recorded'})
     except PositionTrackingTask.DoesNotExist:
-        return JsonResponse({'message': 'Task not found or not in progress'}, status=404)
+        return JsonResponse({'message': 'Task not found or not in progress'}, status=200)
+
+@login_required()
+def api_get_chart_data(request):
+    if request.method == 'POST':
+        time_interval = request.POST.get('time_interval')
+        date_range = request.POST.get('date_range').split(' - ')
+        destination = request.POST.get('destination')
+        product_id = request.POST.get('product_id')
+
+        date_format = '%d-%m-%Y %H:%M:%S'
+        date_range[0] = date_range[0] + " 00:00:00"
+        date_range[1] = date_range[1] + " 23:59:59"
+        start_date = datetime.strptime(date_range[0], date_format)
+        end_date = datetime.strptime(date_range[1], date_format)
+
+        # Make the datetime objects timezone-aware
+        start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+        end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+
+        # Filter logs based on user selection
+        logs = AutoBidderLog.objects.filter(
+            timestamp__range=(start_date, end_date),
+            destination=destination,
+            product_id=product_id
+        )
+
+
+
+        # Group logs by the chosen time interval and calculate average position
+        time_delta = timedelta(hours=1)
+        if time_interval == '5m':
+            time_delta = timedelta(minutes=5)
+        elif time_interval == '15m':
+            time_delta = timedelta(minutes=15)
+        elif time_interval == '1h':
+            time_delta = timedelta(hours=1)
+        elif time_interval == '4h':
+            time_delta = timedelta(hours=4)
+        elif time_interval == '1d':
+            time_delta = timedelta(days=1)
+        elif time_interval == '1w':
+            time_delta = timedelta(weeks=1)
+        elif time_interval == '1M':
+            time_delta = timedelta(days=30)
+
+        labels = []
+        datasets = {}
+
+        current_time = start_date
+        while current_time <= end_date:
+            next_time = current_time + time_delta
+            labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+
+            interval_logs = logs.filter(timestamp__range=(current_time, next_time))
+            keywords = interval_logs.values('keyword').distinct()
+
+            for keyword in keywords:
+                keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
+                avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+
+                if keyword['keyword'] not in datasets:
+                    datasets[keyword['keyword']] = {
+                        'label': keyword['keyword'],
+                        'data': []
+                    }
+
+                datasets[keyword['keyword']]['data'].append(avg_position)
+
+            current_time = next_time
+
+        # Format data for Chart.js
+        response_data = {
+            'labels': labels,
+            'datasets': list(datasets.values())
+        }
+
+        return JsonResponse(response_data)
+    return JsonResponse({}, status=400)
+
+
+@login_required()
+def api_get_destinations(request):
+    destinations = AutoBidderLog.objects.values_list('destination', flat=True).distinct()
+    data = [{'id': dest, 'name': f'Destination {dest}'} for dest in destinations]
+    return JsonResponse(data, safe=False)
+
+
+@login_required()
+def api_get_products(request):
+    campaign_id = request.GET.get('campaign_id')
+    if not campaign_id:
+        return JsonResponse({'error': 'Campaign ID is required'}, status=400)
+
+    try:
+        campaign = Campaign.objects.get(id=campaign_id)
+    except Campaign.DoesNotExist:
+        return JsonResponse({'error': 'Campaign not found or access denied'}, status=404)
+
+    products = AutoBidderLog.objects.filter(campaign=campaign).values_list('product_id', flat=True).distinct()
+    data = [{'id': prod, 'name': f'Product {prod}'} for prod in products]
+    return JsonResponse(data, safe=False)

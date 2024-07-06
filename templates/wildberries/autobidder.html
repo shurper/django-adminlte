@@ -4,7 +4,9 @@
 {% block title %}Настройки AutoBidder для {{ campaign.name }}{% endblock title %}
 
 {% block extrastyle %}
-<!-- Additional styles if needed -->
+<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
 {% endblock extrastyle %}
 
 {% block content %}
@@ -43,8 +45,12 @@
                             {{ range.start_position.label_tag }} {{ range.start_position }}
                             {{ range.end_position.label_tag }} {{ range.end_position }}
                             {{ range.bid.label_tag }} {{ range.bid }}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="editRange({{ range.id }})">Редактировать</button>
-                            <button type="submit" name="delete_range" value="{{ range.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="editRange({{ range.id }})">
+                                Редактировать
+                            </button>
+                            <button type="submit" name="delete_range" value="{{ range.id }}"
+                                    class="btn btn-danger btn-sm">Удалить
+                            </button>
                         </div>
                         {% endfor %}
                     </div>
@@ -60,7 +66,7 @@
         <!-- Intra-Day Schedule -->
         <form method="post">
             {% csrf_token %}
-             <input type="hidden" name="intra_day_schedule" value="intra_day_schedule">
+            <input type="hidden" name="intra_day_schedule" value="intra_day_schedule">
             <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title">Внутридневное Расписание</h3>
@@ -71,8 +77,12 @@
                         <div class="form-group">
                             {{ schedule.start_time.label_tag }} {{ schedule.start_time }}
                             {{ schedule.end_time.label_tag }} {{ schedule.end_time }}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="editIntraDaySchedule({{ schedule.id }})">Редактировать</button>
-                            <button type="submit" name="delete_intra_day_schedule" value="{{ schedule.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                            <button type="button" class="btn btn-primary btn-sm"
+                                    onclick="editIntraDaySchedule({{ schedule.id }})">Редактировать
+                            </button>
+                            <button type="submit" name="delete_intra_day_schedule" value="{{ schedule.id }}"
+                                    class="btn btn-danger btn-sm">Удалить
+                            </button>
                         </div>
                         {% endfor %}
                     </div>
@@ -88,7 +98,7 @@
         <!-- Weekly Schedule -->
         <form method="post">
             {% csrf_token %}
-             <input type="hidden" name="weekly_schedule" value="weekly_schedule">
+            <input type="hidden" name="weekly_schedule" value="weekly_schedule">
             <div class="card card-primary">
                 <div class="card-header">
                     <h3 class="card-title">Еженедельное Расписание</h3>
@@ -98,8 +108,12 @@
                         {% for day in current_weekly_schedule %}
                         <div class="form-group">
                             {{ day.label_tag }} {{ day }}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="editWeeklySchedule({{ day.id }})">Редактировать</button>
-                            <button type="submit" name="delete_weekly_schedule" value="{{ day.id }}" class="btn btn-danger btn-sm">Удалить</button>
+                            <button type="button" class="btn btn-primary btn-sm"
+                                    onclick="editWeeklySchedule({{ day.id }})">Редактировать
+                            </button>
+                            <button type="submit" name="delete_weekly_schedule" value="{{ day.id }}"
+                                    class="btn btn-danger btn-sm">Удалить
+                            </button>
                         </div>
                         {% endfor %}
                     </div>
@@ -112,21 +126,61 @@
             </div>
         </form>
 
-        <!-- Logs -->
+        <!-- Logs and Chart -->
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Логи AutoBidder</h3>
             </div>
             <div class="card-body">
-                <div id="logs">
-                    {% for log in logs %}
-                    <div>{{ log.timestamp }} - {{ log.message }} - {{ log.keyword }}</div>
-                    {% endfor %}
+                <!-- Selectors for the chart -->
+                <div class="form-group">
+                    <label for="time_interval">Интервал времени:</label>
+                    <select class="form-control select2bs4" id="time_interval">
+                        <option value="5m">5 минут</option>
+                        <option value="15m">15 минут</option>
+                        <option value="1h">1 час</option>
+                        <option value="4h">4 часа</option>
+                        <option value="1d">День</option>
+                        <option value="1w">Неделя</option>
+                        <option value="1M">Месяц</option>
+                    </select>
                 </div>
+                <div class="form-group">
+                    <label>Период данных:</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">
+                                <i class="far fa-calendar-alt"></i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control float-right" id="date_range">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="destination">Локация:</label>
+                    <select class="form-control select2bs4" id="destination">
+                        <!-- Options dynamically generated from the backend -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="product_id">Товар:</label>
+                    <select class="form-control select2bs4" id="product_id">
+                        <!-- Options dynamically generated from the backend -->
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="updateChart()">Обновить график</button>
+
+                <!-- Chart.js canvas -->
+                <canvas id="autobidderChart" style="height: 400px;"></canvas>
             </div>
         </div>
     </div>
 </div>
+<script src="{% static 'plugins/jquery/jquery.min.js' %}"></script>
+<script src="{% static 'plugins/moment/moment.min.js' %}"></script>
+<script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
+<script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
+<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
 
 <script>
     function addPositionRange() {
@@ -219,5 +273,137 @@
     function removeElement(element) {
         element.parentElement.remove();
     }
+
+// Initialize Select2 Elements
+    jQuery('.select2bs4').select2({
+                theme: 'bootstrap4'
+    });
+    $('#date_range').daterangepicker({
+                //opens: 'right', // Change this based on your requirement
+                //autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Clear',
+                    format: 'DD-MM-YYYY' // Specify the format used in the picker
+                }
+            });
+
+
+
+
+
+
+    // Fetch destinations and products dynamically
+    fetchDestinations();
+    fetchProducts();
+
+    function fetchDestinations() {
+        // Fetch destinations from the server (replace with actual API endpoint)
+        $.ajax({
+            url: '{% url "api_get_destinations" %}',
+            method: 'GET',
+            success: function(data) {
+                $('#destination').empty();
+                $.each(data, function(index, value) {
+                    $('#destination').append($('<option>', {
+                        value: value.id,
+                        text: value.name
+                    }));
+                });
+            }
+        });
+    }
+
+    function fetchProducts() {
+        // Fetch products from the server (replace with actual API endpoint)
+        $.ajax({
+            url: '{% url "api_get_products" %}',
+            method: 'GET',
+            data: {"campaign_id": "{{ campaign.id }}"},
+            success: function(data) {
+                $('#product_id').empty();
+                $.each(data, function(index, value) {
+                    $('#product_id').append($('<option>', {
+                        value: value.id,
+                        text: value.name
+                    }));
+                });
+            }
+        });
+    }
+
+    // Function to update the chart
+    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
+
+    function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+function updateChart() {
+    const timeInterval = $('#time_interval').val();
+    const dateRange = $('#date_range').val();
+    const destination = $('#destination').val();
+    const productId = $('#product_id').val();
+
+    $.ajax({
+        url: '{% url "api_get_chart_data" %}',
+        method: 'POST',
+        data: {
+            time_interval: timeInterval,
+            date_range: dateRange,
+            destination: destination,
+            product_id: productId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function(data) {
+            const ctx = document.getElementById('autobidderChart').getContext('2d');
+
+            // Если график уже существует, уничтожаем его перед созданием нового
+            if (autobidderChart) {
+                autobidderChart.destroy();
+            }
+
+            // Применяем случайные цвета к каждому dataset
+            data.datasets.forEach(dataset => {
+                const color = getRandomColor();
+                dataset.borderColor = color;
+                dataset.backgroundColor = color;
+                dataset.fill = false; // Не заполнять область под линией
+            });
+
+            autobidderChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: timeInterval
+                            },
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Позиция товара'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
 </script>
 {% endblock %}

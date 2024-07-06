@@ -1,5 +1,5 @@
 # wildberries/utils.py
-from datetime import date
+from datetime import date, datetime
 
 import requests
 from django.utils import timezone
@@ -467,7 +467,17 @@ def get_campaign_statistics(store, advert_ids):
         'Authorization': store.wildberries_api_key,
         'Content-Type': 'application/json'
     }
-    response = requests.post(url, headers=headers, json=[{"id": advert_id} for advert_id in advert_ids])
+    # Get today's date in the format Year-Month-Day
+    today_date = datetime.now().strftime('%Y-%m-%d')
+
+    # Create the JSON payload with the updated format
+    payload = [{"id": advert_id, "dates": [today_date, today_date]} for advert_id in advert_ids]
+
+    response = requests.post(url, headers=headers, json=payload)
+
+    # print("HEEREEE")
+    # print(payload)
+    # print(response.json())
     if response.status_code == 200:
         return response.json()
     else:
@@ -483,58 +493,52 @@ def save_campaign_statistics(store):
     if statistics:
         for stat in statistics:
             campaign = Campaign.objects.get(advert_id=stat['advertId'])
-            campaign_stat, created = CampaignStatistic.objects.update_or_create(
+            campaign_stat = CampaignStatistic.objects.create(
                 campaign=campaign,
-                date=date.today(),
-                defaults={
-                    'views': stat['views'],
-                    'clicks': stat['clicks'],
-                    'ctr': stat['ctr'],
-                    'cpc': stat['cpc'],
-                    'sum': stat['sum'],
-                    'atbs': stat['atbs'],
-                    'orders': stat['orders'],
-                    'cr': stat['cr'],
-                    'shks': stat['shks'],
-                    'sum_price': stat['sum_price']
-                }
+                date=timezone.now(),
+                views=stat['views'],
+                clicks=stat['clicks'],
+                ctr=stat['ctr'],
+                cpc=stat['cpc'],
+                sum=stat['sum'],
+                atbs=stat['atbs'],
+                orders=stat['orders'],
+                cr=stat['cr'],
+                shks=stat['shks'],
+                sum_price=stat['sum_price']
             )
 
             for platform in stat['days'][0]['apps']:
-                platform_stat, created = PlatformStatistic.objects.update_or_create(
+                platform_stat = PlatformStatistic.objects.create(
                     campaign_statistic=campaign_stat,
                     app_type=platform['appType'],
-                    defaults={
-                        'views': platform['views'],
-                        'clicks': platform['clicks'],
-                        'ctr': platform['ctr'],
-                        'cpc': platform['cpc'],
-                        'sum': platform['sum'],
-                        'atbs': platform['atbs'],
-                        'orders': platform['orders'],
-                        'cr': platform['cr'],
-                        'shks': platform['shks'],
-                        'sum_price': platform['sum_price']
-                    }
+                    views=platform['views'],
+                    clicks=platform['clicks'],
+                    ctr=platform['ctr'],
+                    cpc=platform['cpc'],
+                    sum=platform['sum'],
+                    atbs=platform['atbs'],
+                    orders=platform['orders'],
+                    cr=platform['cr'],
+                    shks=platform['shks'],
+                    sum_price=platform['sum_price']
                 )
 
                 for product in platform['nm']:
-                    ProductStatistic.objects.update_or_create(
+                    ProductStatistic.objects.create(
                         platform_statistic=platform_stat,
                         nm_id=product['nmId'],
-                        defaults={
-                            'name': product['name'],
-                            'views': product['views'],
-                            'clicks': product['clicks'],
-                            'ctr': product['ctr'],
-                            'cpc': product['cpc'],
-                            'sum': product['sum'],
-                            'atbs': product['atbs'],
-                            'orders': product['orders'],
-                            'cr': product['cr'],
-                            'shks': product['shks'],
-                            'sum_price': product['sum_price']
-                        }
+                        name=product['name'],
+                        views=product['views'],
+                        clicks=product['clicks'],
+                        ctr=product['ctr'],
+                        cpc=product['cpc'],
+                        sum=product['sum'],
+                        atbs=product['atbs'],
+                        orders=product['orders'],
+                        cr=product['cr'],
+                        shks=product['shks'],
+                        sum_price=product['sum_price']
                     )
 
 

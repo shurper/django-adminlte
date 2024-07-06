@@ -114,7 +114,7 @@ class UnitedParam(models.Model):
 
 class CampaignStatistic(models.Model):
     campaign = models.ForeignKey(Campaign, related_name='statistics', on_delete=models.CASCADE)
-    date = models.DateField()
+    date = models.DateTimeField()
     views = models.IntegerField()
     clicks = models.IntegerField()
     ctr = models.FloatField()
