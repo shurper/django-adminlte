@@ -4,6 +4,9 @@ FROM python:3.10
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Create log directory
+RUN mkdir /logs
+
 COPY requirements.txt .
 # install python dependencies
 RUN pip install --upgrade pip
