@@ -7,9 +7,10 @@
 /node_modules/
 build/
 logs/
+.env
 env
 /staticfiles/
-
+celerybeat-schedule
 #src
 #*.sqlite*
 
