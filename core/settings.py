@@ -101,7 +101,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-ALLOWED_HOSTS = ['wildberries.ru','127.0.0.1']
+ALLOWED_HOSTS = ['wildberries.ru','127.0.0.1','metrics.tonantis.com']
 
 # Специальный URL
 #CORS_URLS_REGEX = r'^/wildberries/api/observer/report$'

@@ -77,7 +77,7 @@ def save_campaign_details(store, campaign_data):
                 catalog_cpm = param['catalogCPM']
                 search_cpm = param['searchCPM']
                 subject_data = param.get('subject', {})
-                if subject_data.get('name', '') is '':
+                if subject_data.get('name', '') == '':
                     continue
                 menus_data = param.get('menus', [])
                 nms = param.get('nms', [])
@@ -111,7 +111,7 @@ def save_campaign_details(store, campaign_data):
         elif type == 8:
             auto_params = campaign.get('autoParams', {})
             subject_data = auto_params.get('subject', {})
-            if subject_data.get('name', '') is '':
+            if subject_data.get('name', '') == '':
                 continue
             sets_data = auto_params.get('sets', [])
             active = auto_params.get('active', {})
@@ -133,32 +133,7 @@ def save_campaign_details(store, campaign_data):
                     'payment_type': payment_type
                 }
             )
-            # "autoParams": {
-            #     "subject": {
-            #         "name": "Сумки спортивные",
-            #         "id": 7640
-            #     },
-            #     "sets": [
-            #         {
-            #             "name": "для мужчин",
-            #             "id": 6107
-            #         }
-            #     ],
-            #     "nms": [
-            #         234269557
-            #     ],
-            #     "active": {
-            #         "carousel": true,
-            #         "recom": false,
-            #         "booster": true
-            #     },
-            #     "nmCPM": [
-            #         {
-            #             "nm": 234269557,
-            #             "cpm": 125
-            #         }
-            #     ]
-            # }
+
             subject_obj, _ = Subject.objects.get_or_create(
                 id=subject_data['id'],
                 defaults={'name': subject_data.get('name', 'Скоро появится')}
