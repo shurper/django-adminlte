@@ -65,7 +65,7 @@ class Campaign(models.Model):
         return self.TYPE_CHOICES.get(self.type, "Неизвестный тип")
 
     def is_active(self):
-        return self.status is 9
+        return self.status == 9
 
     def __str__(self):
         return self.name
