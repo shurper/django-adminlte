@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
     command: >
-      sh -c "/wait_for_db.sh && python manage.py migrate && gunicorn --config gunicorn-cfg.py core.wsgi"
+      sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate && gunicorn --config gunicorn-cfg.py core.wsgi"
 
   db:
     image: postgres:13
