@@ -4,6 +4,9 @@ FROM python:3.10
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Install PostgreSQL client
+RUN apt-get update && apt-get install -y postgresql-client
+
 # Create log directory
 RUN mkdir /logs
 
@@ -14,8 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# running migrations
-RUN python manage.py migrate
+COPY wait_for_db.sh /wait_for_db.sh
+RUN chmod +x /wait_for_db.sh
 
 # gunicorn
 CMD ["gunicorn", "--config", "gunicorn-cfg.py", "core.wsgi"]

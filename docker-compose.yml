@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   appseed-app:
@@ -17,6 +17,8 @@ services:
       - web_network
     depends_on:
       - db
+    command: >
+      sh -c "/wait_for_db.sh && python manage.py migrate && gunicorn --config gunicorn-cfg.py core.wsgi"
 
   db:
     image: postgres:13

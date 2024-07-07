@@ -238,7 +238,7 @@ class PositionTrackingTask(models.Model):
     product_id = models.IntegerField()
     destination = models.IntegerField(null=True, blank=True)
     keyword = models.CharField(max_length=255)
-    depth = models.IntegerField(blank=True, null=True, default=2, max_length=3)
+    depth = models.IntegerField(blank=True, null=True, default=2)
     status = models.CharField(max_length=50,
                               choices=[('request', 'Request'), ('in_progress', 'In Progress'), ('done', 'Done')])
     actual_position = models.IntegerField(null=True, blank=True)
