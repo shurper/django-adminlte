@@ -12,11 +12,13 @@ services:
       DB_HOST: 'db'
       DB_PORT: '5432'
       DB_NAME: 'marketmetrika_db'
+      CELERY_BROKER_URL: 'redis://redis:6379/0'  # Add broker URL
     networks:
       - db_network
       - web_network
     depends_on:
       - db
+      - redis  # Add redis dependency
     command: >
       sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate && gunicorn --config gunicorn-cfg.py core.wsgi"
 
@@ -34,6 +36,34 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"  # Проброс порта на хост
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    networks:
+      - db_network
+      - web_network
+
+  celery:
+    container_name: celery
+    restart: always
+    build: .
+    command: celery -A core worker -l info -B
+    environment:
+      DB_ENGINE: 'postgresql'
+      DB_USERNAME: 'marketmetrika_user'
+      DB_PASS: 'your_password'
+      DB_HOST: 'db'
+      DB_PORT: '5432'
+      DB_NAME: 'marketmetrika_db'
+      CELERY_BROKER_URL: 'redis://redis:6379/0'  # Add broker URL
+    networks:
+      - db_network
+      - web_network
+    depends_on:
+      - db
+      - redis
 
   nginx:
     container_name: nginx
