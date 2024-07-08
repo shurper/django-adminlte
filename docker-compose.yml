@@ -32,6 +32,8 @@ services:
       - db_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  # Проброс порта на хост
 
   nginx:
     container_name: nginx
