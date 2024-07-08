@@ -14,6 +14,9 @@ class SignUpForm(UserCreationForm):
 
 
 class StoreForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
     def clean_wildberries_api_key(self):
         store = Store
@@ -22,9 +25,16 @@ class StoreForm(forms.ModelForm):
             raise forms.ValidationError("Недействительный API ключ Wildberries.")
         return store.wildberries_api_key
 
+    def save(self, commit=True):
+        store = super().save(commit=False)
+        if self.user:
+            store.user = self.user
+        if commit:
+            store.save()
+        return store
+
     class Meta:
         model = Store
-
         fields = ['name', 'wildberries_name', 'wildberries_api_key', 'status']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
