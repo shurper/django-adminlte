@@ -27,12 +27,12 @@ def index(request):
 @login_required
 def add_store(request):
     if request.method == 'POST':
-        form = StoreForm(request.POST)
+        form = StoreForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
             return redirect('stores')
     else:
-        form = StoreForm()
+        form = StoreForm(user=request.user)
     return render(request, 'wildberries/add_store.html', {'form': form})
 
 
