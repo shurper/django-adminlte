@@ -17,7 +17,6 @@ from str2bool import str2bool
 from celery import Celery
 from celery.schedules import crontab
 
-
 load_dotenv()  # take environment variables from .env.
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
-    SECRET_KEY = ''.join(random.choice( string.ascii_lowercase  ) for i in range( 32 ))
+    SECRET_KEY = ''.join(random.choice(string.ascii_lowercase) for i in range(32))
 
 # Enable/Disable DEBUG Mode
 DEBUG = str2bool(os.environ.get('DEBUG'))
@@ -39,11 +38,12 @@ DEBUG = str2bool(os.environ.get('DEBUG'))
 ALLOWED_HOSTS = ['*']
 
 # Add here your deployment HOSTS
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://localhost:5085', 'http://127.0.0.1:8000', 'http://127.0.0.1:5085', 'http://metrics.tonantis.com', 'https://metrics.tonantis.com']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://localhost:5085', 'http://127.0.0.1:8000',
+                        'http://127.0.0.1:5085', 'http://metrics.tonantis.com', 'https://metrics.tonantis.com']
 
 #Render Context
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:    
+if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
@@ -101,7 +101,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-ALLOWED_HOSTS = ['www.wildberries.ru','wildberries.ru','127.0.0.1','metrics.tonantis.com']
+ALLOWED_HOSTS = ['www.wildberries.ru', 'wildberries.ru', '127.0.0.1', 'metrics.tonantis.com']
 
 # Специальный URL
 #CORS_URLS_REGEX = r'^/wildberries/api/observer/report$'
@@ -128,27 +128,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DB_ENGINE   = os.getenv('DB_ENGINE'   , None)
-DB_USERNAME = os.getenv('DB_USERNAME' , None)
-DB_PASS     = os.getenv('DB_PASS'     , None)
-DB_HOST     = os.getenv('DB_HOST'     , None)
-DB_PORT     = os.getenv('DB_PORT'     , None)
-DB_NAME     = os.getenv('DB_NAME'     , None)
+DB_ENGINE = os.getenv('DB_ENGINE', None)
+DB_USERNAME = os.getenv('DB_USERNAME', None)
+DB_PASS = os.getenv('DB_PASS', None)
+DB_HOST = os.getenv('DB_HOST', None)
+DB_PORT = os.getenv('DB_PORT', None)
+DB_NAME = os.getenv('DB_NAME', None)
 
 if DB_ENGINE and DB_NAME and DB_USERNAME:
-    DATABASES = { 
-      'default': {
-        'ENGINE'  : 'django.db.backends.' + DB_ENGINE, 
-        'NAME'    : DB_NAME,
-        'USER'    : DB_USERNAME,
-        'PASSWORD': DB_PASS,
-        'HOST'    : DB_HOST,
-        'PORT'    : DB_PORT,
-        }, 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.' + DB_ENGINE,
+            'NAME': DB_NAME,
+            'USER': DB_USERNAME,
+            'PASSWORD': DB_PASS,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+        },
     }
 else:
     DATABASES = {
@@ -176,7 +175,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
@@ -187,7 +185,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
@@ -244,9 +241,8 @@ LOGGING = {
     },
 }
 
-
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
