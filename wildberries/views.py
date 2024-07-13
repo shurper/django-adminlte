@@ -3,13 +3,14 @@ import json
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg
-from django.http import HttpResponse, JsonResponse
+
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime, timedelta
 from django.utils import timezone
-
+from django.db.models import Avg
+from django.core.cache import cache
 
 from wildberries.forms import SignUpForm, StoreForm, PositionRangeForm, IntraDayScheduleForm, WeeklyScheduleForm, \
     CreateAutoBidderSettingsForm
@@ -303,6 +304,266 @@ def observer_report_position(request):
     except PositionTrackingTask.DoesNotExist:
         return JsonResponse({'message': 'Task not found or not in progress'}, status=200)
 
+# @login_required()
+# def api_get_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         destination = request.POST.get('destination')
+#         product_id = request.POST.get('product_id')
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#
+#         # Filter logs based on user selection
+#         logs = AutoBidderLog.objects.filter(
+#             timestamp__range=(start_date, end_date),
+#             destination=destination,
+#             product_id=product_id
+#         )
+#
+#
+#
+#         # Group logs by the chosen time interval and calculate average position
+#         time_delta = timedelta(hours=1)
+#         if time_interval == '5m':
+#             time_delta = timedelta(minutes=5)
+#         elif time_interval == '15m':
+#             time_delta = timedelta(minutes=15)
+#         elif time_interval == '1h':
+#             time_delta = timedelta(hours=1)
+#         elif time_interval == '4h':
+#             time_delta = timedelta(hours=4)
+#         elif time_interval == '1d':
+#             time_delta = timedelta(days=1)
+#         elif time_interval == '1w':
+#             time_delta = timedelta(weeks=1)
+#         elif time_interval == '1M':
+#             time_delta = timedelta(days=30)
+#
+#         labels = []
+#         datasets = {}
+#
+#         current_time = start_date
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             interval_logs = logs.filter(timestamp__range=(current_time, next_time))
+#             keywords = interval_logs.values('keyword').distinct()
+#
+#             for keyword in keywords:
+#                 keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
+#                 avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+#
+#                 if keyword['keyword'] not in datasets:
+#                     datasets[keyword['keyword']] = {
+#                         'label': keyword['keyword'],
+#                         'data': []
+#                     }
+#
+#                 datasets[keyword['keyword']]['data'].append(avg_position)
+#
+#             current_time = next_time
+#
+#         # Format data for Chart.js
+#         response_data = {
+#             'labels': labels,
+#             'datasets': list(datasets.values())
+#         }
+#
+#         return JsonResponse(response_data)
+#     return JsonResponse({}, status=400)
+
+
+# @login_required()
+# def api_get_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         destination = request.POST.get('destination')
+#         product_id = request.POST.get('product_id')
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#         now = timezone.now()
+#
+#         # Filter logs based on user selection
+#         logs = AutoBidderLog.objects.filter(
+#             timestamp__range=(start_date, end_date),
+#             destination=destination,
+#             product_id=product_id
+#         )
+#
+#         # Group logs by the chosen time interval and calculate average position
+#         time_deltas = {
+#             '5m': timedelta(minutes=5),
+#             '15m': timedelta(minutes=15),
+#             '1h': timedelta(hours=1),
+#             '4h': timedelta(hours=4),
+#             '1d': timedelta(days=1),
+#             '1w': timedelta(weeks=1),
+#             '1M': timedelta(days=30),
+#         }
+#         time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+#
+#         labels = []
+#         datasets = {}
+#
+#         keywords = logs.values('keyword').distinct()
+#         current_time = start_date
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             if current_time <= now:
+#                 interval_logs = logs.filter(timestamp__gte=current_time, timestamp__lt=next_time)
+#
+#                 for keyword in keywords:
+#                     keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
+#                     avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+#
+#                     if keyword['keyword'] not in datasets:
+#                         datasets[keyword['keyword']] = {
+#                             'label': keyword['keyword'],
+#                             'data': []
+#                         }
+#
+#                     datasets[keyword['keyword']]['data'].append(avg_position if avg_position is not None else None)
+#             else:
+#                 for keyword in keywords:
+#                     if keyword['keyword'] not in datasets:
+#                         datasets[keyword['keyword']] = {
+#                             'label': keyword['keyword'],
+#                             'data': []
+#                         }
+#                     datasets[keyword['keyword']]['data'].append(None)
+#
+#             current_time = next_time
+#
+#         # Format data for Chart.js
+#         response_data = {
+#             'labels': labels,
+#             'datasets': list(datasets.values())
+#         }
+#
+#         return JsonResponse(response_data)
+#     return JsonResponse({}, status=400)
+
+@login_required()
+# def api_get_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         destination = request.POST.get('destination')
+#         product_id = request.POST.get('product_id')
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#         now = timezone.now()
+#
+#         # Determine the truncation function based on the time interval
+#         trunc_map = {
+#             '5m': TruncMinute,
+#             '15m': TruncMinute,
+#             '1h': TruncHour,
+#             '4h': TruncHour,
+#             '1d': TruncDay,
+#             '1w': TruncWeek,
+#             '1M': TruncMonth,
+#         }
+#         trunc_func = trunc_map.get(time_interval, TruncHour)
+#
+#         # Filter logs based on user selection and aggregate data
+#         logs = (
+#             AutoBidderLog.objects.filter(
+#                 timestamp__range=(start_date, end_date),
+#                 destination=destination,
+#                 product_id=product_id,
+#                 position__lte=200
+#             )
+#             .annotate(interval_start=trunc_func('timestamp'))
+#             .values('interval_start', 'keyword')
+#             .annotate(avg_position=Avg('position'))
+#             .order_by('interval_start')
+#         )
+#
+#         # Prepare labels and datasets
+#         labels = []
+#         datasets = {}
+#
+#         # Create a dictionary to hold the aggregated data
+#         data = {}
+#         for log in logs:
+#             interval_start = log['interval_start']
+#             keyword = log['keyword']
+#             avg_position = log['avg_position']
+#
+#             if interval_start not in data:
+#                 data[interval_start] = {}
+#             data[interval_start][keyword] = avg_position
+#
+#         # Generate the time intervals and fill the datasets
+#         current_time = start_date
+#         time_delta = timedelta(minutes=5 if time_interval == '5m' else (
+#             15 if time_interval == '15m' else (
+#                 60 if time_interval == '1h' else (
+#                     240 if time_interval == '4h' else (
+#                         1440 if time_interval == '1d' else (
+#                             10080 if time_interval == '1w' else 43200
+#                         )
+#                     )
+#                 )
+#             )
+#         ))
+#
+#         while current_time <= end_date:
+#             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#             for keyword in data.get(current_time, {}):
+#                 if keyword not in datasets:
+#                     datasets[keyword] = {
+#                         'label': keyword,
+#                         'data': []
+#                     }
+#                 datasets[keyword]['data'].append(data[current_time].get(keyword, None))
+#
+#             # Fill missing data with None
+#             for keyword in datasets:
+#                 if current_time not in data or keyword not in data[current_time]:
+#                     datasets[keyword]['data'].append(None)
+#
+#             current_time += time_delta
+#
+#         # Format data for Chart.js
+#         response_data = {
+#             'labels': labels,
+#             'datasets': list(datasets.values())
+#         }
+#
+#         return JsonResponse(response_data)
+#     return JsonResponse({}, status=400)
+
 @login_required()
 def api_get_chart_data(request):
     if request.method == 'POST':
@@ -320,6 +581,7 @@ def api_get_chart_data(request):
         # Make the datetime objects timezone-aware
         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+        now = timezone.now()
 
         # Filter logs based on user selection
         logs = AutoBidderLog.objects.filter(
@@ -328,47 +590,58 @@ def api_get_chart_data(request):
             product_id=product_id
         )
 
-
-
         # Group logs by the chosen time interval and calculate average position
-        time_delta = timedelta(hours=1)
-        if time_interval == '5m':
-            time_delta = timedelta(minutes=5)
-        elif time_interval == '15m':
-            time_delta = timedelta(minutes=15)
-        elif time_interval == '1h':
-            time_delta = timedelta(hours=1)
-        elif time_interval == '4h':
-            time_delta = timedelta(hours=4)
-        elif time_interval == '1d':
-            time_delta = timedelta(days=1)
-        elif time_interval == '1w':
-            time_delta = timedelta(weeks=1)
-        elif time_interval == '1M':
-            time_delta = timedelta(days=30)
+        time_deltas = {
+            '5m': timedelta(minutes=5),
+            '15m': timedelta(minutes=15),
+            '1h': timedelta(hours=1),
+            '4h': timedelta(hours=4),
+            '1d': timedelta(days=1),
+            '1w': timedelta(weeks=1),
+            '1M': timedelta(days=30),
+        }
+        time_delta = time_deltas.get(time_interval, timedelta(hours=1))
 
         labels = []
         datasets = {}
 
+        keywords = logs.values('keyword').distinct()
         current_time = start_date
+
         while current_time <= end_date:
             next_time = current_time + time_delta
             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
 
-            interval_logs = logs.filter(timestamp__range=(current_time, next_time))
-            keywords = interval_logs.values('keyword').distinct()
+            if current_time <= now:
+                cache_key = f'{destination}_{product_id}_{current_time}_{next_time}'
+                interval_data = cache.get(cache_key)
 
-            for keyword in keywords:
-                keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
-                avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+                if interval_data is None:
+                    interval_logs = logs.filter(timestamp__gte=current_time, timestamp__lt=next_time)
+                    interval_data = {}
 
-                if keyword['keyword'] not in datasets:
-                    datasets[keyword['keyword']] = {
-                        'label': keyword['keyword'],
-                        'data': []
-                    }
+                    for keyword in keywords:
+                        keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
+                        avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+                        interval_data[keyword['keyword']] = avg_position if avg_position is not None else None
 
-                datasets[keyword['keyword']]['data'].append(avg_position)
+                    cache.set(cache_key, interval_data, timeout=360000)  # Cache for 1 hour
+
+                for keyword, avg_position in interval_data.items():
+                    if keyword not in datasets:
+                        datasets[keyword] = {
+                            'label': keyword,
+                            'data': []
+                        }
+                    datasets[keyword]['data'].append(avg_position)
+            else:
+                for keyword in keywords:
+                    if keyword['keyword'] not in datasets:
+                        datasets[keyword['keyword']] = {
+                            'label': keyword['keyword'],
+                            'data': []
+                        }
+                    datasets[keyword['keyword']]['data'].append(None)
 
             current_time = next_time
 

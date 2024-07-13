@@ -281,3 +281,17 @@ CELERY_BEAT_SCHEDULE = {
     },
 
 }
+
+CACHE_LOCATION_URL = os.getenv('CACHE_LOCATION_URL', 'redis://localhost:6379/0')
+CACHE_BACKEND = os.getenv('CACHE_BACKEND', 'django_redis.cache.RedisCache')
+CACHE_CLIENT = os.getenv('CACHE_CLIENT', 'django_redis.client.DefaultClient')
+
+CACHES = {
+    'default': {
+        'BACKEND': CACHE_BACKEND,
+        'LOCATION': CACHE_LOCATION_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': CACHE_CLIENT,
+        }
+    }
+}

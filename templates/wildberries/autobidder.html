@@ -18,15 +18,31 @@
             <input type="hidden" name="create_settings" value="create_settings">
             <input type="hidden" name="id" value="create_settings">
             <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">Настройки AutoBidder</h3>
-                </div>
-                <div class="card-body">
-                    {{ create_form.as_p }}
-                </div>
-                <div class="card-footer">
-                    <button type="submit" name="create_settings" class="btn btn-primary">Сохранить</button>
-                </div>
+
+
+                <form method="post">
+                    <div class="card-header">
+                        <h3 class="card-title">Настройки AutoBidder</h3>
+                    </div>
+                    <div class="card-body">
+
+                        {% csrf_token %}
+                        {% for field in create_form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ field.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" name="create_settings" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
             </div>
         </form>
 

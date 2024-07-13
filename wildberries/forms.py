@@ -65,7 +65,8 @@ class WeeklyScheduleForm(forms.Form):
 class CreateAutoBidderSettingsForm(forms.ModelForm):
     keywords_monitoring = forms.MultipleChoiceField(
         choices=[],
-        widget=forms.SelectMultiple(attrs={'required': False})
+        widget=forms.SelectMultiple(attrs={'required': False}),
+        label='Мониторинг ключевых слов'
     )
     destinations_monitoring = forms.MultipleChoiceField(
         choices=[
@@ -73,7 +74,8 @@ class CreateAutoBidderSettingsForm(forms.ModelForm):
             (123585791, "Электросталь"),
             (-5650614, "Сочи")
         ],
-        widget=forms.SelectMultiple(attrs={'required': False})
+        widget=forms.SelectMultiple(attrs={'required': False}),
+        label='Мониторинг местоположений'
     )
 
     class Meta:
@@ -87,6 +89,16 @@ class CreateAutoBidderSettingsForm(forms.ModelForm):
             'destination': forms.Select(choices=[(0, 'Не выбрано'), (123585791, "Электросталь"), (-5650614, "Сочи")]),
             'is_enabled': forms.Select(choices=[(True, "Включен"), (False, "Выключен")]),
         }
+        labels = {
+            'product_id': 'ID продукта',
+            'keyword': 'Ключевое слово',
+            'destination': 'Местоположение',
+            'max_bid': 'Максимальная ставка',
+            'is_enabled': 'Включено',
+            'depth': 'Глубина мониторинга',
+            'keywords_monitoring': 'Мониторинг ключевых слов',
+            'destinations_monitoring': 'Мониторинг местоположений',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -94,6 +106,10 @@ class CreateAutoBidderSettingsForm(forms.ModelForm):
         campaign_id = self.initial.get('campaign_id') or self.instance.campaign_id
         if campaign_id:
             self.fields['keywords_monitoring'].choices = KeywordData.get_fixed_keywords_choices(campaign_id)
+
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+
 
 class PositionRangeForm(forms.ModelForm):
     class Meta:
