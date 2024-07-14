@@ -280,7 +280,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 20.0,
     },
     'delete-stale-tasks': {
-        'task': 'app_name.tasks.delete_stale_tasks',
+        'task': 'wildberries.tasks.delete_stale_tasks',
         'schedule': crontab(minute='*/10'),  # Каждые 10 минут
     },
 
