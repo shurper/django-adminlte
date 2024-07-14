@@ -1,5 +1,7 @@
 # wildberries/tasks.py
 import logging
+from datetime import timedelta
+
 from celery import shared_task
 
 from django.utils import timezone
@@ -228,3 +230,15 @@ def determine_new_bid(autobidder, position):
     return 0
 
 
+@shared_task
+def delete_stale_tasks():
+    from .models import PositionTrackingTask
+    # Определяем время, более которого задачи считаются "зависшими"
+    stale_time = timezone.now() - timedelta(minutes=10)
+
+    # Находим и удаляем задачи со статусом "in_progress", обновленные более 10 минут назад
+    stale_tasks = PositionTrackingTask.objects.filter(status='in_progress', updated_at__lt=stale_time)
+    count = stale_tasks.count()
+    stale_tasks.delete()
+
+    return f'{count} stale tasks deleted'

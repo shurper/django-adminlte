@@ -464,7 +464,7 @@ def observer_report_position(request):
 #         return JsonResponse(response_data)
 #     return JsonResponse({}, status=400)
 
-@login_required()
+#@login_required()
 # def api_get_chart_data(request):
 #     if request.method == 'POST':
 #         time_interval = request.POST.get('time_interval')
