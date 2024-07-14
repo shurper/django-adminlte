@@ -614,7 +614,10 @@ def api_get_chart_data(request):
 
             if current_time <= now:
                 cache_key = f'{destination}_{product_id}_{current_time}_{next_time}'
-                interval_data = cache.get(cache_key)
+                if current_time != now:
+                    interval_data = cache.get(cache_key)
+                else:
+                    interval_data = None
 
                 if interval_data is None:
                     interval_logs = logs.filter(timestamp__gte=current_time, timestamp__lt=next_time)
