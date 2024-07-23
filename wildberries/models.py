@@ -161,6 +161,8 @@ class ProductStatistic(models.Model):
     sum = models.DecimalField(max_digits=10, decimal_places=2)
     atbs = models.IntegerField()
     orders = models.IntegerField()
+    actual_atbs = models.IntegerField(default=0)
+    actual_orders = models.IntegerField(default=0)
     cr = models.FloatField()
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -285,6 +287,9 @@ class AutoBidderLog(models.Model):
     destination = models.IntegerField(null=True, blank=True)
     product_id = models.IntegerField(null=True, blank=True)
     position = models.IntegerField(null=True, blank=True)
+    clicks = models.IntegerField(null=True, blank=True)
+    cards = models.IntegerField(null=True, blank=True)
+    orders = models.IntegerField(null=True, blank=True)
     bid = models.FloatField(null=True, blank=True)
 
     def __str__(self):

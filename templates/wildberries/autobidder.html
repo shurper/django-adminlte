@@ -188,6 +188,9 @@
 
                 <!-- Chart.js canvas -->
                 <canvas id="autobidderChart" style="height: 400px;"></canvas>
+
+                <canvas id="statChart"></canvas>
+                <button type="button" class="btn btn-primary" onclick="updateStatChart()">Обновить график статистики</button>
             </div>
         </div>
     </div>
@@ -349,6 +352,7 @@
 
     // Function to update the chart
     let autobidderChart; // Глобальная переменная для хранения экземпляра графика
+    let statChart; // Глобальная переменная для хранения экземпляра графика
 
     function getRandomColor() {
     const letters = '0123456789ABCDEF';
@@ -413,6 +417,68 @@ function updateChart() {
                             title: {
                                 display: true,
                                 text: 'Позиция товара'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+function updateStatChart() {
+    const timeInterval = $('#time_interval').val();
+    const dateRange = $('#date_range').val();
+    const destination = $('#destination').val();
+    const productId = $('#product_id').val();
+
+    $.ajax({
+        url: '{% url "api_get_stat_chart_data" %}',
+        method: 'POST',
+        data: {
+            time_interval: timeInterval,
+            date_range: dateRange,
+            destination: destination,
+            product_id: productId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function(data) {
+            const ctx = document.getElementById('statChart').getContext('2d');
+
+            // Если график уже существует, уничтожаем его перед созданием нового
+            if (statChart) {
+                statChart.destroy();
+            }
+
+            // Применяем случайные цвета к каждому dataset
+            data.datasets.forEach(dataset => {
+                const color = getRandomColor();
+                dataset.borderColor = color;
+                dataset.backgroundColor = color;
+                dataset.fill = false; // Не заполнять область под линией
+            });
+
+            autobidderChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: timeInterval
+                            },
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Единицы'
                             }
                         }
                     }

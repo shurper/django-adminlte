@@ -2,7 +2,7 @@
 from django.urls import path
 from . import views
 from .views import edit_store, autobidder_view, observer_get_task, observer_report_position, api_get_chart_data, \
-    api_get_destinations, api_get_products
+    api_get_destinations, api_get_products, api_get_stat_chart_data
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/observer/task/', observer_get_task, name='observer_get_task'),
     path('api/observer/report/', observer_report_position, name='observer_report_position'),
     path('api/chart-data/', api_get_chart_data, name='api_get_chart_data'),
+    path('api/stat-data/', api_get_stat_chart_data, name='api_get_stat_chart_data'),
     path('api/destinations/', api_get_destinations, name='api_get_destinations'),
     path('api/products/', api_get_products, name='api_get_products'),
     #path('store/<int:store_id>/store_campaigns/', views.store_campaigns, name='store_campaigns'),

@@ -235,7 +235,7 @@ def delete_stale_tasks():
     from .models import PositionTrackingTask
     # Определяем время, более которого задачи считаются "зависшими"
     stale_time = timezone.now() - timedelta(minutes=10)
-
+    print(f"delete_stale_tasks. stale_time: {stale_time}")
     # Находим и удаляем задачи со статусом "in_progress", обновленные более 10 минут назад
     stale_tasks = PositionTrackingTask.objects.filter(status='in_progress', updated_at__lt=stale_time)
     count = stale_tasks.count()
