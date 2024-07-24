@@ -457,7 +457,7 @@ function updateStatChart() {
                 dataset.fill = false; // Не заполнять область под линией
             });
 
-            autobidderChart = new Chart(ctx, {
+            statChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
