@@ -167,10 +167,10 @@ def keyword_statistics(request, campaign_id):
 def auto_keyword_statistics(request, campaign_id):
     campaign = get_object_or_404(Campaign, id=campaign_id)
     keyword_statistics = AutoCampaignKeywordStatistic.objects.filter(campaign=campaign).order_by('-date_recorded')
-    
+
     if not keyword_statistics.current_user_has_access(request):
         return HttpResponseForbidden()
-    
+
     return render(request, 'wildberries/auto_keyword_statistics.html', {
         'campaign': campaign,
         'keyword_statistics': keyword_statistics,
@@ -274,7 +274,6 @@ def autobidder_view(request, campaign_id):
 
 @csrf_exempt
 def observer_get_task(request):
-
     # TODO: check permissions
     tasks = PositionTrackingTask.objects.filter(status='request').order_by('created_at')
 
@@ -329,7 +328,201 @@ def observer_report_position(request):
         return JsonResponse({'message': 'Task not found or not in progress'}, status=200)
 
 
-@login_required()
+# @login_required()
+# def api_get_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         destination = request.POST.get('destination')
+#         product_id = request.POST.get('product_id')
+#         campaign_id = request.POST.get('campaign_id')
+#
+#         campaign = get_object_or_404(Campaign, pk=campaign_id)
+#
+#         if not campaign.current_user_has_access(request):
+#             return HttpResponseForbidden()
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#         now = timezone.now()
+#
+#         # Filter logs based on user selection
+#         logs = AutoBidderLog.objects.filter(
+#             timestamp__range=(start_date, end_date),
+#             destination=destination,
+#             product_id=product_id,
+#             campaign_id=campaign_id
+#         )
+#
+#         # Group logs by the chosen time interval and calculate average position
+#         time_deltas = {
+#             '5m': timedelta(minutes=5),
+#             '15m': timedelta(minutes=15),
+#             '1h': timedelta(hours=1),
+#             '4h': timedelta(hours=4),
+#             '1d': timedelta(days=1),
+#             '1w': timedelta(weeks=1),
+#             '1M': timedelta(days=30),
+#         }
+#         time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+#
+#         labels = []
+#         datasets = {}
+#
+#         keywords = logs.values('keyword').distinct()
+#         current_time = start_date
+#
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             if current_time <= now:
+#                 cache_key = f'{destination}_{product_id}_{current_time}_{next_time}'
+#                 if current_time != now:
+#                     interval_data = cache.get(cache_key)
+#                 else:
+#                     interval_data = None
+#
+#                 if interval_data is None:
+#                     interval_logs = logs.filter(timestamp__gte=current_time, timestamp__lt=next_time)
+#                     interval_data = {}
+#
+#                     for keyword in keywords:
+#                         keyword_logs = interval_logs.filter(keyword=keyword['keyword'], position__lte=200)
+#                         avg_position = keyword_logs.aggregate(Avg('position'))['position__avg']
+#                         interval_data[keyword['keyword']] = avg_position if avg_position is not None else None
+#
+#                     cache.set(cache_key, interval_data, timeout=360000)  # Cache for 1 hour
+#
+#                 for keyword, avg_position in interval_data.items():
+#                     if keyword not in datasets:
+#                         datasets[keyword] = {
+#                             'label': keyword,
+#                             'data': []
+#                         }
+#                     datasets[keyword]['data'].append(avg_position)
+#             else:
+#                 for keyword in keywords:
+#                     if keyword['keyword'] not in datasets:
+#                         datasets[keyword['keyword']] = {
+#                             'label': keyword['keyword'],
+#                             'data': []
+#                         }
+#                     datasets[keyword['keyword']]['data'].append(None)
+#
+#             current_time = next_time
+#
+#         # Format data for Chart.js
+#         response_data = {
+#             'labels': labels,
+#             'datasets': list(datasets.values())
+#         }
+#
+#         return JsonResponse(response_data)
+#     return JsonResponse({}, status=400)
+
+# @login_required()
+# def api_get_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         destination = request.POST.get('destination')
+#         product_id = request.POST.get('product_id')
+#         campaign_id = request.POST.get('campaign_id')
+#
+#         campaign = get_object_or_404(Campaign, pk=campaign_id)
+#
+#         if not campaign.current_user_has_access(request):
+#             return HttpResponseForbidden()
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         start_date = timezone.make_aware(datetime.strptime(date_range[0] + " 00:00:00", date_format),
+#                                          timezone.get_current_timezone())
+#         end_date = timezone.make_aware(datetime.strptime(date_range[1] + " 23:59:59", date_format),
+#                                        timezone.get_current_timezone())
+#         now = timezone.now()
+#
+#         # Group logs by the chosen time interval and calculate average position
+#         time_deltas = {
+#             '5m': timedelta(minutes=5),
+#             '15m': timedelta(minutes=15),
+#             '1h': timedelta(hours=1),
+#             '4h': timedelta(hours=4),
+#             '1d': timedelta(days=1),
+#             '1w': timedelta(weeks=1),
+#             '1M': timedelta(days=30),
+#         }
+#         time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+#
+#         labels = []
+#         datasets = defaultdict(lambda: {'label': '', 'data': []})
+#
+#         # Extract all logs at once and process in memory
+#         logs = AutoBidderLog.objects.filter(
+#             timestamp__range=(start_date, end_date),
+#             destination=destination,
+#             product_id=product_id,
+#             campaign_id=campaign_id
+#         ).values('timestamp', 'keyword', 'position')
+#
+#         # Prepare a dict to store logs by intervals
+#         interval_logs = defaultdict(list)
+#
+#         for log in logs:
+#             interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
+#             interval_logs[interval_start].append(log)
+#
+#         current_time = start_date
+#
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#             labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             if current_time <= now:
+#                 cache_key = f'{campaign_id}_{destination}_{product_id}_{current_time}_{next_time}'
+#                 if current_time != now:
+#                     interval_data = cache.get(cache_key)
+#                 else:
+#                     interval_data = None
+#
+#                 if interval_data is None:
+#                     interval_data = defaultdict(list)
+#
+#                     for log in interval_logs[current_time]:
+#                         if log['position'] <= 200:
+#                             interval_data[log['keyword']].append(log['position'])
+#
+#                     for keyword, positions in interval_data.items():
+#                         avg_position = sum(positions) / len(positions) if positions else None
+#                         interval_data[keyword] = avg_position
+#
+#                     cache.set(cache_key, interval_data, timeout=360000)  # Cache
+#
+#                 for keyword, avg_position in interval_data.items():
+#                     datasets[keyword]['label'] = keyword
+#                     datasets[keyword]['data'].append(avg_position)
+#             else:
+#                 for keyword in datasets.keys():
+#                     datasets[keyword]['data'].append(None)
+#
+#             current_time = next_time
+#
+#         response_data = {
+#             'labels': labels,
+#             'datasets': list(datasets.values())
+#         }
+#
+#         return JsonResponse(response_data)
+#     return JsonResponse({}, status=400)
+
+
 def api_get_chart_data(request):
     if request.method == 'POST':
         time_interval = request.POST.get('time_interval')
@@ -344,8 +537,10 @@ def api_get_chart_data(request):
             return HttpResponseForbidden()
 
         date_format = '%d-%m-%Y %H:%M:%S'
-        start_date = timezone.make_aware(datetime.strptime(date_range[0] + " 00:00:00", date_format), timezone.get_current_timezone())
-        end_date = timezone.make_aware(datetime.strptime(date_range[1] + " 23:59:59", date_format), timezone.get_current_timezone())
+        start_date = timezone.make_aware(datetime.strptime(date_range[0] + " 00:00:00", date_format),
+                                         timezone.get_current_timezone())
+        end_date = timezone.make_aware(datetime.strptime(date_range[1] + " 23:59:59", date_format),
+                                       timezone.get_current_timezone())
         now = timezone.now()
 
         # Group logs by the chosen time interval and calculate average position
@@ -378,6 +573,7 @@ def api_get_chart_data(request):
             interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
             interval_logs[interval_start].append(log)
 
+        keywords = set(log['keyword'] for log in logs)
         current_time = start_date
 
         while current_time <= end_date:
@@ -402,13 +598,14 @@ def api_get_chart_data(request):
                         avg_position = sum(positions) / len(positions) if positions else None
                         interval_data[keyword] = avg_position
 
-                    cache.set(cache_key, interval_data, timeout=3600)  # Cache for 1 hour
+                    cache.set(cache_key, interval_data, timeout=360000)  # Cache for 1 hour
 
-                for keyword, avg_position in interval_data.items():
+                for keyword in keywords:
+                    avg_position = interval_data.get(keyword, None)
                     datasets[keyword]['label'] = keyword
                     datasets[keyword]['data'].append(avg_position)
             else:
-                for keyword in datasets.keys():
+                for keyword in keywords:
                     datasets[keyword]['data'].append(None)
 
             current_time = next_time
@@ -421,6 +618,315 @@ def api_get_chart_data(request):
         return JsonResponse(response_data)
     return JsonResponse({}, status=400)
 
+
+# def api_get_stat_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         product_id = request.POST.get('product_id')
+#         campaign_id = request.POST.get('campaign_id')
+#
+#         campaign = get_object_or_404(Campaign, pk=campaign_id)
+#
+#         if not campaign.current_user_has_access(request):
+#             return HttpResponseForbidden()
+#
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#
+#         # Filter logs based on user selection
+#         base_stats = (
+#             ProductStatistic.objects
+#             .filter(
+#                 nm_id=product_id,
+#                 platform_statistic__campaign_statistic__campaign=campaign,
+#                 platform_statistic__campaign_statistic__date__range=(start_date, end_date)
+#             )
+#             .values('platform_statistic__campaign_statistic__date')
+#             .annotate(
+#                 views=Coalesce(Sum('views'), 0, output_field=IntegerField()),
+#                 clicks=Coalesce(Sum('clicks'), 0, output_field=IntegerField()),
+#                 sum=Coalesce(Sum('sum'), 0, output_field=DecimalField()),
+#                 atbs=Coalesce(Sum('atbs'), 0, output_field=IntegerField()),
+#                 orders=Coalesce(Sum('orders'), 0, output_field=IntegerField()),
+#                 actual_atbs=Coalesce(Sum('actual_atbs'), 0, output_field=IntegerField()),
+#                 actual_orders=Coalesce(Sum('actual_orders'), 0, output_field=IntegerField()),
+#                 cr=Coalesce(Sum('cr'), 0, output_field=DecimalField()),
+#                 shks=Coalesce(Sum('shks'), 0, output_field=DecimalField()),
+#                 sum_price=Coalesce(Sum('sum_price'), 0, output_field=DecimalField())
+#             )
+#             .order_by('platform_statistic__campaign_statistic__date')
+#         )
+#
+#         # Дополнительные вычисления на основе агрегатов
+#         statistics = base_stats.annotate(
+#             ctr=ExpressionWrapper(
+#                 Case(
+#                     When(views__gt=0, then=F('clicks') * 100.0 / F('views')),
+#                     default=Value(0.0),
+#                     output_field=FloatField()
+#                 ),
+#                 output_field=FloatField()
+#             ),
+#             cpc=ExpressionWrapper(
+#                 Case(
+#                     When(clicks__gt=0, then=F('sum') * 1.0 / F('clicks')),
+#                     default=Value(0.0),
+#                     output_field=FloatField()
+#                 ),
+#                 output_field=FloatField()
+#             )
+#         )
+#
+#
+#
+#         # Group logs by the chosen time interval and calculate required metrics
+#         time_deltas = {
+#             '5m': timedelta(minutes=5),
+#             '15m': timedelta(minutes=15),
+#             '1h': timedelta(hours=1),
+#             '4h': timedelta(hours=4),
+#             '1d': timedelta(days=1),
+#             '1w': timedelta(weeks=1),
+#             '1M': timedelta(days=30),
+#         }
+#         time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+#
+#         data = {
+#             'labels': [],
+#             'datasets': [
+#                 {'label': 'Views', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Clicks', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CTR', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'CPC', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Sum', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#                 {'label': 'ATBs', 'data': [], 'borderColor': 'rgba(255, 159, 64, 1)', 'fill': False},
+#                 {'label': 'Orders', 'data': [], 'borderColor': 'rgba(199, 199, 199, 1)', 'fill': False},
+#                 {'label': 'Actual ATBs', 'data': [], 'borderColor': 'rgba(255, 99, 132, 1)', 'fill': False},
+#                 {'label': 'Actual Orders', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CR', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'SHKs', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'Sum Price', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#             ]
+#         }
+#
+#         current_time = start_date
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#
+#             interval_statistics = statistics.filter(
+#                 platform_statistic__campaign_statistic__date__range=(current_time, next_time)
+#             )
+#
+#
+#             data['labels'].append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             interval_data = {
+#                 'views': 0,
+#                 'clicks': 0,
+#                 'ctr': 0,
+#                 'cpc': 0,
+#                 'sum': 0,
+#                 'atbs': 0,
+#                 'orders': 0,
+#                 'actual_atbs': 0,
+#                 'actual_orders': 0,
+#                 'cr': 0,
+#                 'shks': 0,
+#                 'sum_price': 0,
+#             }
+#
+#             if len(interval_statistics) != 0:
+#                 interval_data = {
+#                     # 'views': sum(stat.views for stat in interval_statistics) / len(interval_statistics),
+#                     'views': sum(stat.views for stat in interval_statistics),
+#                     'clicks': sum(stat.clicks for stat in interval_statistics) / len(interval_statistics),
+#                     'ctr': sum(stat.ctr for stat in interval_statistics) / len(interval_statistics),
+#                     'cpc': sum(float(stat.cpc) for stat in interval_statistics) / len(interval_statistics),
+#                     'sum': sum(float(stat.sum) for stat in interval_statistics) / len(interval_statistics),
+#                     'atbs': sum(stat.atbs for stat in interval_statistics) / len(interval_statistics),
+#                     'orders': sum(stat.orders for stat in interval_statistics) / len(interval_statistics),
+#                     'actual_atbs': sum(stat.actual_atbs for stat in interval_statistics) / len(interval_statistics),
+#                     'actual_orders': sum(stat.actual_orders for stat in interval_statistics) / len(interval_statistics),
+#                     'cr': sum(stat.cr for stat in interval_statistics) / len(interval_statistics),
+#                     'shks': sum(stat.shks for stat in interval_statistics) / len(interval_statistics),
+#                     'sum_price': sum(float(stat.sum_price) for stat in interval_statistics) / len(interval_statistics),
+#                 }
+#
+#             data['datasets'][0]['data'].append(interval_data['views'])
+#             data['datasets'][1]['data'].append(interval_data['clicks'])
+#             data['datasets'][2]['data'].append(interval_data['ctr'])
+#             data['datasets'][3]['data'].append(interval_data['cpc'])
+#             data['datasets'][4]['data'].append(interval_data['sum'])
+#             data['datasets'][5]['data'].append(interval_data['atbs'])
+#             data['datasets'][6]['data'].append(interval_data['orders'])
+#             data['datasets'][7]['data'].append(interval_data['actual_atbs'])
+#             data['datasets'][8]['data'].append(interval_data['actual_orders'])
+#             data['datasets'][9]['data'].append(interval_data['cr'])
+#             data['datasets'][10]['data'].append(interval_data['shks'])
+#             data['datasets'][11]['data'].append(interval_data['sum_price'])
+#
+#             current_time = next_time
+#
+#         return JsonResponse(data)
+
+# def api_get_stat_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         product_id = request.POST.get('product_id')
+#         campaign_id = request.POST.get('campaign_id')
+#
+#         campaign = get_object_or_404(Campaign, pk=campaign_id)
+#
+#         if not campaign.current_user_has_access(request):
+#             return HttpResponseForbidden()
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#
+#         base_stats = (
+#             ProductStatistic.objects
+#             .filter(
+#                 nm_id=product_id,
+#                 platform_statistic__campaign_statistic__campaign=campaign,
+#                 platform_statistic__campaign_statistic__date__range=(start_date, end_date)
+#             )
+#             .values('platform_statistic__campaign_statistic__date')
+#             .annotate(
+#                 views=Coalesce(Sum('views'), 0, output_field=IntegerField()),
+#                 clicks=Coalesce(Sum('clicks'), 0, output_field=IntegerField()),
+#                 sum=Coalesce(Sum('sum'), 0, output_field=DecimalField()),
+#                 atbs=Coalesce(Sum('atbs'), 0, output_field=IntegerField()),
+#                 orders=Coalesce(Sum('orders'), 0, output_field=IntegerField()),
+#                 actual_atbs=Coalesce(Sum('actual_atbs'), 0, output_field=IntegerField()),
+#                 actual_orders=Coalesce(Sum('actual_orders'), 0, output_field=IntegerField()),
+#                 cr=Coalesce(Sum('cr'), 0, output_field=DecimalField()),
+#                 shks=Coalesce(Sum('shks'), 0, output_field=DecimalField()),
+#                 sum_price=Coalesce(Sum('sum_price'), 0, output_field=DecimalField())
+#             )
+#             .order_by('platform_statistic__campaign_statistic__date')
+#         )
+#
+#         statistics = base_stats.annotate(
+#             ctr=ExpressionWrapper(
+#                 Case(
+#                     When(views__gt=0, then=F('clicks') * 100.0 / F('views')),
+#                     default=Value(0.0),
+#                     output_field=FloatField()
+#                 ),
+#                 output_field=FloatField()
+#             ),
+#             cpc=ExpressionWrapper(
+#                 Case(
+#                     When(clicks__gt=0, then=F('sum') * 1.0 / F('clicks')),
+#                     default=Value(0.0),
+#                     output_field=FloatField()
+#                 ),
+#                 output_field=FloatField()
+#             )
+#         )
+#
+#         time_deltas = {
+#             '5m': timedelta(minutes=5),
+#             '15m': timedelta(minutes=15),
+#             '1h': timedelta(hours=1),
+#             '4h': timedelta(hours=4),
+#             '1d': timedelta(days=1),
+#             '1w': timedelta(weeks=1),
+#             '1M': timedelta(days=30),
+#         }
+#         time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+#
+#         data = {
+#             'labels': [],
+#             'datasets': [
+#                 {'label': 'Views', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Clicks', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CTR', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'CPC', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Sum', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#                 {'label': 'ATBs', 'data': [], 'borderColor': 'rgba(255, 159, 64, 1)', 'fill': False},
+#                 {'label': 'Orders', 'data': [], 'borderColor': 'rgba(199, 199, 199, 1)', 'fill': False},
+#                 {'label': 'Actual ATBs', 'data': [], 'borderColor': 'rgba(255, 99, 132, 1)', 'fill': False},
+#                 {'label': 'Actual Orders', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CR', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'SHKs', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'Sum Price', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#             ]
+#         }
+#
+#         current_time = start_date
+#         while current_time <= end_date:
+#             next_time = current_time + time_delta
+#
+#             interval_statistics = statistics.filter(
+#                 platform_statistic__campaign_statistic__date__range=(current_time, next_time)
+#             )
+#
+#             data['labels'].append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
+#
+#             interval_data = {
+#                 'views': 0,
+#                 'clicks': 0,
+#                 'ctr': 0,
+#                 'cpc': 0,
+#                 'sum': 0,
+#                 'atbs': 0,
+#                 'orders': 0,
+#                 'actual_atbs': 0,
+#                 'actual_orders': 0,
+#                 'cr': 0,
+#                 'shks': 0,
+#                 'sum_price': 0,
+#             }
+#
+#             if len(interval_statistics) != 0:
+#                 interval_data = {
+#                     'views': sum(stat['views'] for stat in interval_statistics) / len(interval_statistics),
+#                     'clicks': sum(stat['clicks'] for stat in interval_statistics) / len(interval_statistics),
+#                     'ctr': sum(stat['ctr'] for stat in interval_statistics) / len(interval_statistics),
+#                     'cpc': sum(stat['cpc'] for stat in interval_statistics) / len(interval_statistics),
+#                     'sum': sum(stat['sum'] for stat in interval_statistics) / len(interval_statistics),
+#                     'atbs': sum(stat['atbs'] for stat in interval_statistics) / len(interval_statistics),
+#                     'orders': sum(stat['orders'] for stat in interval_statistics) / len(interval_statistics),
+#                     'actual_atbs': sum(stat['actual_atbs'] for stat in interval_statistics) / len(interval_statistics),
+#                     'actual_orders': sum(stat['actual_orders'] for stat in interval_statistics) / len(interval_statistics),
+#                     'cr': sum(stat['cr'] for stat in interval_statistics) / len(interval_statistics),
+#                     'shks': sum(stat['shks'] for stat in interval_statistics) / len(interval_statistics),
+#                     'sum_price': sum(stat['sum_price'] for stat in interval_statistics) / len(interval_statistics),
+#                 }
+#
+#             data['datasets'][0]['data'].append(interval_data['views'])
+#             data['datasets'][1]['data'].append(interval_data['clicks'])
+#             data['datasets'][2]['data'].append(interval_data['ctr'])
+#             data['datasets'][3]['data'].append(interval_data['cpc'])
+#             data['datasets'][4]['data'].append(interval_data['sum'])
+#             data['datasets'][5]['data'].append(interval_data['atbs'])
+#             data['datasets'][6]['data'].append(interval_data['orders'])
+#             data['datasets'][7]['data'].append(interval_data['actual_atbs'])
+#             data['datasets'][8]['data'].append(interval_data['actual_orders'])
+#             data['datasets'][9]['data'].append(interval_data['cr'])
+#             data['datasets'][10]['data'].append(interval_data['shks'])
+#             data['datasets'][11]['data'].append(interval_data['sum_price'])
+#
+#             current_time = next_time
+#
+#         return JsonResponse(data)
 
 def api_get_stat_chart_data(request):
     if request.method == 'POST':
@@ -516,7 +1022,8 @@ def api_get_stat_chart_data(request):
         stats_by_interval = defaultdict(lambda: defaultdict(list))
 
         for stat in base_stats:
-            interval_start = (stat['platform_statistic__campaign_statistic__date'] - start_date) // time_delta * time_delta + start_date
+            interval_start = (stat[
+                                  'platform_statistic__campaign_statistic__date'] - start_date) // time_delta * time_delta + start_date
             stats_by_interval[interval_start]['views'].append(stat['views'])
             stats_by_interval[interval_start]['clicks'].append(stat['clicks'])
             stats_by_interval[interval_start]['ctr'].append(stat['ctr'])
@@ -572,6 +1079,95 @@ def api_get_stat_chart_data(request):
 
         return JsonResponse(data)
 
+
+# def api_get_stat_chart_data(request):
+#     if request.method == 'POST':
+#         time_interval = request.POST.get('time_interval')
+#         date_range = request.POST.get('date_range').split(' - ')
+#         product_id = request.POST.get('product_id')
+#         campaign_id = request.POST.get('campaign_id')
+#
+#         campaign = get_object_or_404(Campaign, pk=campaign_id)
+#
+#         if not campaign.current_user_has_access(request):
+#             return HttpResponseForbidden()
+#
+#         date_format = '%d-%m-%Y %H:%M:%S'
+#         date_range[0] = date_range[0] + " 00:00:00"
+#         date_range[1] = date_range[1] + " 23:59:59"
+#         start_date = datetime.strptime(date_range[0], date_format)
+#         end_date = datetime.strptime(date_range[1], date_format)
+#
+#         # Make the datetime objects timezone-aware
+#         start_date = timezone.make_aware(start_date, timezone.get_current_timezone())
+#         end_date = timezone.make_aware(end_date, timezone.get_current_timezone())
+#
+#         statistics = (
+#             ProductStatistic.objects
+#             .filter(
+#                 nm_id=product_id,
+#                 platform_statistic__campaign_statistic__campaign=campaign,
+#                 platform_statistic__campaign_statistic__date__range=(start_date, end_date)
+#             )
+#             .values('platform_statistic__campaign_statistic__campaign_id', 'platform_statistic__campaign_statistic__date')
+#             .annotate(
+#                 views=Sum('views'),
+#                 clicks=Sum('clicks'),
+#                 sum=Sum('sum'),
+#                 ctr=ExpressionWrapper(
+#                     Sum('clicks') * 100.0 / Coalesce(Sum('views'), 1),
+#                     output_field=FloatField()
+#                 ),
+#                 cpc=ExpressionWrapper(
+#                     Sum('sum') * 1.0 / Coalesce(Sum('clicks'), 1),
+#                     output_field=FloatField()
+#                 ),
+#                 atbs=Sum('atbs'),
+#                 orders=Sum('orders'),
+#                 actual_atbs=Sum('actual_atbs'),
+#                 actual_orders=Sum('actual_orders'),
+#                 cr=Sum('cr'),
+#                 shks=Sum('shks'),
+#                 sum_price=Sum('sum_price')
+#             )
+#             .order_by('platform_statistic__campaign_statistic__date')
+#         )
+#
+#         # Prepare data for chart
+#         data = {
+#             'labels': [],
+#             'datasets': [
+#                 {'label': 'Views', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Clicks', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CTR', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'CPC', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'Sum', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#                 {'label': 'ATBs', 'data': [], 'borderColor': 'rgba(255, 159, 64, 1)', 'fill': False},
+#                 {'label': 'Orders', 'data': [], 'borderColor': 'rgba(199, 199, 199, 1)', 'fill': False},
+#                 {'label': 'Actual ATBs', 'data': [], 'borderColor': 'rgba(255, 99, 132, 1)', 'fill': False},
+#                 {'label': 'Actual Orders', 'data': [], 'borderColor': 'rgba(54, 162, 235, 1)', 'fill': False},
+#                 {'label': 'CR', 'data': [], 'borderColor': 'rgba(75, 192, 192, 1)', 'fill': False},
+#                 {'label': 'SHKs', 'data': [], 'borderColor': 'rgba(255, 206, 86, 1)', 'fill': False},
+#                 {'label': 'Sum Price', 'data': [], 'borderColor': 'rgba(153, 102, 255, 1)', 'fill': False},
+#             ]
+#         }
+#
+#         for stat in statistics:
+#             data['labels'].append(stat['platform_statistic__campaign_statistic__date'].strftime('%d-%m-%Y %H:%M:%S'))
+#             data['datasets'][0]['data'].append(stat['views'])
+#             data['datasets'][1]['data'].append(stat['clicks'])
+#             data['datasets'][2]['data'].append(stat['ctr'])
+#             data['datasets'][3]['data'].append(stat['cpc'])
+#             data['datasets'][4]['data'].append(stat['sum'])
+#             data['datasets'][5]['data'].append(stat['atbs'])
+#             data['datasets'][6]['data'].append(stat['orders'])
+#             data['datasets'][7]['data'].append(stat['actual_atbs'])
+#             data['datasets'][8]['data'].append(stat['actual_orders'])
+#             data['datasets'][9]['data'].append(stat['cr'])
+#             data['datasets'][10]['data'].append(stat['shks'])
+#             data['datasets'][11]['data'].append(stat['sum_price'])
+#
+#         return JsonResponse(data)
 
 @login_required()
 def api_get_destinations(request):
