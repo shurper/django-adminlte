@@ -22,6 +22,9 @@ class Store(models.Model):
         from .tasks import fetch_and_save_campaigns
         fetch_and_save_campaigns.delay(self.id)
 
+    def current_user_has_access(self, request):
+        return self.user == request.user
+
     def __str__(self):
         return self.name
 
@@ -67,6 +70,9 @@ class Campaign(models.Model):
     def is_active(self):
         return self.status == 9
 
+    def current_user_has_access(self, request):
+        return self.store.user == request.user
+
     def __str__(self):
         return self.name
 
@@ -108,6 +114,9 @@ class UnitedParam(models.Model):
     active_recom = models.BooleanField(default=False, verbose_name='Active Recom')
     active_booster = models.BooleanField(default=False, verbose_name='Active Booster')
 
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
+
     def __str__(self):
         return f'{self.campaign.name} - {self.subject.name}'
 
@@ -125,6 +134,9 @@ class CampaignStatistic(models.Model):
     cr = models.FloatField()
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
 
 
 class PlatformStatistic(models.Model):
@@ -145,6 +157,9 @@ class PlatformStatistic(models.Model):
     cr = models.FloatField()
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def current_user_has_access(self, request):
+        return self.campaign_statistic.campaign.store.user == request.user
 
     def platform_type_display(self):
         return self.TYPE_CHOICES.get(self.app_type, "Неизвестный тип")
@@ -167,12 +182,18 @@ class ProductStatistic(models.Model):
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def current_user_has_access(self, request):
+        return self.platform_statistic.campaign_statistic.campaign.store.user == request.user
+
 
 class CampaignKeywordStatistic(models.Model):
     campaign = models.ForeignKey(Campaign, related_name='keyword_statistics', on_delete=models.CASCADE)
     keyword = models.CharField(max_length=255)
     count = models.IntegerField()
     date_received = models.DateTimeField(default=timezone.now)
+
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
 
 
 class KeywordData(models.Model):
@@ -182,6 +203,9 @@ class KeywordData(models.Model):
     excluded = models.JSONField()
     pluse = models.JSONField()
     fixed = models.BooleanField()
+
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
 
     @classmethod
     def get_fixed_keywords_choices(cls, campaign_id):
@@ -199,12 +223,16 @@ class AutoCampaignKeywordStatistic(models.Model):
     sum = models.FloatField()
     date_recorded = models.DateTimeField()
 
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
+
     class Meta:
         unique_together = ('campaign', 'keyword', 'date_recorded')
 
 
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+
 
 class AutoBidderSettings(models.Model):
     campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE)
@@ -216,6 +244,9 @@ class AutoBidderSettings(models.Model):
     destinations_monitoring = models.JSONField(verbose_name='destinations_monitoring', default=list)
     max_bid = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_enabled = models.BooleanField(default=True)
+
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
 
     def __str__(self):
         return f"AutoBidderSettings for campaign {self.campaign}"
@@ -234,7 +265,6 @@ class AutoBidderSettings(models.Model):
                 PositionTrackingTask.objects.filter(campaign=self.campaign).delete()
 
 
-
 class PositionTrackingTask(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
     product_id = models.IntegerField()
@@ -247,6 +277,9 @@ class PositionTrackingTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
+
 
 class PositionRange(models.Model):
     autobidder_settings = models.ForeignKey(AutoBidderSettings, on_delete=models.CASCADE,
@@ -254,6 +287,9 @@ class PositionRange(models.Model):
     start_position = models.IntegerField()
     end_position = models.IntegerField()
     bid = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def current_user_has_access(self, request):
+        return self.autobidder_settings.campaign.store.user == request.user
 
     def __str__(self):
         return f"{self.start_position}-{self.end_position}: {self.bid}"
@@ -265,6 +301,9 @@ class IntraDaySchedule(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
 
+    def current_user_has_access(self, request):
+        return self.autobidder_settings.campaign.store.user == request.user
+
     def __str__(self):
         return f"{self.start_time} - {self.end_time}"
 
@@ -273,6 +312,9 @@ class WeeklySchedule(models.Model):
     autobidder_settings = models.ForeignKey(AutoBidderSettings, on_delete=models.CASCADE,
                                             related_name='weekly_schedules')
     day_of_week = models.CharField(max_length=20)
+
+    def current_user_has_access(self, request):
+        return self.autobidder_settings.campaign.store.user == request.user
 
     def __str__(self):
         return self.day_of_week
@@ -291,6 +333,9 @@ class AutoBidderLog(models.Model):
     cards = models.IntegerField(null=True, blank=True)
     orders = models.IntegerField(null=True, blank=True)
     bid = models.FloatField(null=True, blank=True)
+
+    def current_user_has_access(self, request):
+        return self.campaign.store.user == request.user
 
     def __str__(self):
         return f"{self.timestamp} - {self.message}"

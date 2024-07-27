@@ -422,8 +422,10 @@ def fetch_and_save_campaigns(store_id):
     try:
         print(f'Store with id {store_id} prepared to update')
         store = Store.objects.get(id=store_id)
+
+
         campaign_list_data = get_campaign_list(store)
-        print(campaign_list_data)
+        # print(campaign_list_data)
         if campaign_list_data:
             advert_ids = []
             for advert in campaign_list_data['adverts']:

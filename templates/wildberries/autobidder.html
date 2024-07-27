@@ -368,6 +368,7 @@ function updateChart() {
     const dateRange = $('#date_range').val();
     const destination = $('#destination').val();
     const productId = $('#product_id').val();
+    const campaignId = '{{ campaign.id }}';
 
     $.ajax({
         url: '{% url "api_get_chart_data" %}',
@@ -377,6 +378,7 @@ function updateChart() {
             date_range: dateRange,
             destination: destination,
             product_id: productId,
+            campaign_id: campaignId,
             csrfmiddlewaretoken: '{{ csrf_token }}'
         },
         success: function(data) {
@@ -430,6 +432,7 @@ function updateStatChart() {
     const dateRange = $('#date_range').val();
     const destination = $('#destination').val();
     const productId = $('#product_id').val();
+    const campaignId = '{{ campaign.id }}';
 
     $.ajax({
         url: '{% url "api_get_stat_chart_data" %}',
@@ -439,6 +442,7 @@ function updateStatChart() {
             date_range: dateRange,
             destination: destination,
             product_id: productId,
+            campaign_id: campaignId,
             csrfmiddlewaretoken: '{{ csrf_token }}'
         },
         success: function(data) {
