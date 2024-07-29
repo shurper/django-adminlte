@@ -321,13 +321,18 @@
             url: '{% url "api_get_destinations" %}',
             method: 'GET',
             success: function(data) {
-                $('#destination').empty();
+                let inp = $('#destination');
+                inp.empty();
                 $.each(data, function(index, value) {
-                    $('#destination').append($('<option>', {
+                    inp.append($('<option>', {
                         value: value.id,
                         text: value.name
                     }));
                 });
+                setTimeout(()=>{
+                   loadCharts();
+                },1000);
+
             }
         });
     }
@@ -339,13 +344,17 @@
             method: 'GET',
             data: {"campaign_id": "{{ campaign.id }}"},
             success: function(data) {
-                $('#product_id').empty();
+                let inp = $('#product_id');
+                inp.empty();
                 $.each(data, function(index, value) {
-                    $('#product_id').append($('<option>', {
+                    inp.append($('<option>', {
                         value: value.id,
                         text: value.name
                     }));
                 });
+                setTimeout(()=>{
+                    loadCharts();
+                },1000);
             }
         });
     }
@@ -354,14 +363,41 @@
     let autobidderChart; // Глобальная переменная для хранения экземпляра графика
     let statChart; // Глобальная переменная для хранения экземпляра графика
 
-    function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
     }
-    return color;
-}
+
+    function setCookie(name, value, days) {
+        let expires = '';
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = `; expires=${date.toUTCString()}`;
+        }
+        document.cookie = `${name}=${value || ''}${expires}; path=/`;
+    }
+
+    function getRandomColor(target) {
+        // Check if the color for the target is already stored in cookies
+        let color = getCookie(target);
+        if (color) {
+            return color;  // Return the stored color if it exists
+        }
+
+        // Generate a new color if not found in cookies
+        const letters = '0123456789ABCDEF';
+        color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+
+        // Store the new color in cookies with a 30-day expiration
+        setCookie(target, color, 30);
+
+        return color;
+    }
 
 function updateChart() {
     const timeInterval = $('#time_interval').val();
@@ -391,7 +427,8 @@ function updateChart() {
 
             // Применяем случайные цвета к каждому dataset
             data.datasets.forEach(dataset => {
-                const color = getRandomColor();
+
+                const color = getRandomColor(dataset.label);
                 dataset.borderColor = color;
                 dataset.backgroundColor = color;
                 dataset.fill = false; // Не заполнять область под линией
@@ -456,7 +493,7 @@ function updateStatChart() {
 
             // Применяем случайные цвета к каждому dataset
             data.datasets.forEach(dataset => {
-                const color = getRandomColor();
+                const color = getRandomColor(dataset.label);
                 dataset.borderColor = color;
                 dataset.backgroundColor = color;
                 dataset.fill = false; // Не заполнять область под линией
@@ -493,9 +530,12 @@ function updateStatChart() {
         }
     });
 }
-    $('#ab_monitor').find('select, input').on('change', function(){
+    function loadCharts(){
         updateChart();
         updateStatChart();
+    }
+    $('#ab_monitor').find('select, input').on('change', function(){
+        loadCharts();
     });
     let chartUpdaterInProgress = false;
     setInterval(()=>{
