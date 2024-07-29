@@ -143,7 +143,7 @@
         </form>
 
         <!-- Logs and Chart -->
-        <div class="card">
+        <div class="card" id="ab_monitor">
             <div class="card-header">
                 <h3 class="card-title">Логи AutoBidder</h3>
             </div>
@@ -404,6 +404,7 @@ function updateChart() {
                     datasets: data.datasets
                 },
                 options: {
+                    animation: false,
                     scales: {
                         x: {
                             type: 'time',
@@ -468,6 +469,7 @@ function updateStatChart() {
                     datasets: data.datasets
                 },
                 options: {
+                    animation: false,
                     scales: {
                         x: {
                             type: 'time',
@@ -491,5 +493,18 @@ function updateStatChart() {
         }
     });
 }
+    $('#ab_monitor').find('select, input').on('change', function(){
+        updateChart();
+        updateStatChart();
+    });
+    let chartUpdaterInProgress = false;
+    setInterval(()=>{
+        if(chartUpdaterInProgress) return true;
+        chartUpdaterInProgress = true;
+        updateChart();
+        updateStatChart();
+        chartUpdaterInProgress = false;
+
+    },10000);
 </script>
 {% endblock %}
