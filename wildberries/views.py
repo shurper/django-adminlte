@@ -403,7 +403,7 @@ def api_get_chart_data(request):
                         avg_position = sum(positions) / len(positions) if positions else None
                         interval_data[keyword] = avg_position
 
-                    cache.set(cache_key, interval_data, timeout=360000)  # Cache for 1 hour
+                    cache.set(cache_key, interval_data, timeout=60)  # Cache for
 
                 for keyword in keywords:
                     avg_position = interval_data.get(keyword, None)
