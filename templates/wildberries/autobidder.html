@@ -301,15 +301,15 @@
     jQuery('.select2bs4').select2({
                 theme: 'bootstrap4'
     });
-    $('#date_range').daterangepicker({
+    const rangepicker = $('#date_range').daterangepicker({
                 //opens: 'right', // Change this based on your requirement
                 //autoUpdateInput: false,
                 locale: {
                     cancelLabel: 'Clear',
                     format: 'DD-MM-YYYY' // Specify the format used in the picker
                 }
-            });
-
+            }).data('daterangepicker');
+    window.console.log(rangepicker);
 
 
 
@@ -413,7 +413,7 @@ function restoreLegendVisibility(chart) {
     const legendState = getCookie('legendState');
     if (legendState) {
         const parsedState = JSON.parse(legendState);
-        console.log('Legend state loaded:', parsedState);
+        //console.log('Legend state loaded:', parsedState);
         chart.data.datasets.forEach((dataset, index) => {
             if (parsedState[dataset.label] !== undefined) {
                 chart.setDatasetVisibility(index, !parsedState[dataset.label]);
@@ -426,166 +426,401 @@ function restoreLegendVisibility(chart) {
 // Function to update the chart
     let autobidderChart; // Глобальная переменная для хранения экземпляра графика
     let statChart; // Глобальная переменная для хранения экземпляра графика
-function updateChart() {
-    const timeInterval = $('#time_interval').val();
-    const dateRange = $('#date_range').val();
-    const destination = $('#destination').val();
-    const productId = $('#product_id').val();
-    const campaignId = '{{ campaign.id }}';
-    if (autobidderChart) {
-                saveLegendVisibility(autobidderChart);
-    }
-    $.ajax({
-        url: '{% url "api_get_chart_data" %}',
-        method: 'POST',
-        data: {
-            time_interval: timeInterval,
-            date_range: dateRange,
-            destination: destination,
-            product_id: productId,
-            campaign_id: campaignId,
-            csrfmiddlewaretoken: '{{ csrf_token }}'
-        },
-        success: function(data) {
-            const ctx = document.getElementById('autobidderChart').getContext('2d');
+let panTimeout = null;
 
-            // Сохраняем текущее состояние масштабирования и панорамирования
-            let currentMin = null;
-            let currentMax = null;
-            if (autobidderChart && autobidderChart.options.scales.x) {
-                currentMin = autobidderChart.options.scales.x.min;
-                currentMax = autobidderChart.options.scales.x.max;
-            }
+//function updateChart() {
+//    const timeInterval = $('#time_interval').val();
+//    const dateRange = $('#date_range').val();
+//    const destination = $('#destination').val();
+//    const productId = $('#product_id').val();
+//    const campaignId = '{{ campaign.id }}';
+//    if (autobidderChart) {
+//                saveLegendVisibility(autobidderChart);
+//    }
+//    $.ajax({
+//        url: '{% url "api_get_chart_data" %}',
+//        method: 'POST',
+//        data: {
+//            time_interval: timeInterval,
+//            date_range: dateRange,
+//            destination: destination,
+//            product_id: productId,
+//            campaign_id: campaignId,
+//            csrfmiddlewaretoken: '{{ csrf_token }}'
+//        },
+//        success: function(data) {
+//            const ctx = document.getElementById('autobidderChart').getContext('2d');
+//
+//            // Сохраняем текущее состояние масштабирования и панорамирования
+//            let currentMin = null;
+//            let currentMax = null;
+//            if (autobidderChart && autobidderChart.options.scales.x) {
+//                currentMin = autobidderChart.options.scales.x.min;
+//                currentMax = autobidderChart.options.scales.x.max;
+//            }
+//
+//            // Если график уже существует, уничтожаем его перед созданием нового
+//            if (autobidderChart) {
+//                autobidderChart.destroy();
+//            }
+//
+//            // Проверка данных на наличие undefined или null значений
+//            if (!data || !data.labels || !data.datasets) {
+//                console.error('Invalid data received from the server');
+//                return;
+//            }
+//
+//            // Объединяем все наборы данных в один массив
+//            const allDatasets = [];
+//            data.datasets.forEach((datasetGroup, groupIndex) => {
+//                if (!Array.isArray(datasetGroup)) {
+//                    console.error('Invalid dataset group received from the server');
+//                    return;
+//                }
+//                datasetGroup.forEach(dataset => {
+//                    if (!dataset || !dataset.label || !dataset.data) {
+//                        console.error('Invalid dataset received from the server');
+//                        return;
+//                    }
+//                    const color = getRandomColor(dataset.label);
+//                    dataset.borderColor = color;
+//                    dataset.backgroundColor = color;
+//                    dataset.fill = false; // Не заполнять область под линией
+//                    dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+//                    allDatasets.push(dataset);
+//                });
+//            });
+//
+//            const annotation = {
+//                type: 'line',
+//                borderColor: 'black',
+//                borderWidth: 1,
+//                display: (ctx) => ctx.chart.isDatasetVisible(1),
+//                label: {
+//                    display: true,
+//                    content: 'Now',
+//                    position: 'start'
+//                },
+//                scaleID: 'x',
+//                value: '2024-07-18T11:00:00+00:00'
+//            };
+//
+//            const labels = data.labels;
+//
+//            autobidderChart = new Chart(ctx, {
+//                type: 'line',
+//                data: {
+//                    labels: labels,
+//                    datasets: allDatasets
+//                },
+//                options: {
+//                    maintainAspectRatio: false, // Отключаем поддержку пропорций
+//                    animation: false,
+//                    scales: {
+//                        x: {
+//                            type: 'time',
+//                            title: {
+//                                display: true,
+//                                text: 'Время'
+//                            },
+//                            min: currentMin, // Восстанавливаем текущее состояние масштабирования
+//                            max: currentMax, // Восстанавливаем текущее состояние масштабирования
+//                            ticks: {
+//                                maxRotation: 0,
+//                                autoSkip: true,
+//                                maxTicksLimit: 24 // Настраиваем максимальное количество отображаемых меток
+//                            }
+//                        },
+//                        y: {
+//                            title: {
+//                                display: true,
+//                                text: 'Позиция товара'
+//                            },
+//                            offset: true,
+//                            stack: 'stack_1',
+//                            stackWeight: 2,
+//                        },
+//                        y1: {
+//                            title: {
+//                                display: true,
+//                                text: 'Статистика'
+//                            },
+//                            offset: true,
+//                            stack: 'stack_1',
+//                            stackWeight: 1,
+//                            grid: {
+//                                drawOnChartArea: false // Отключаем сетку на второй оси
+//                            },
+//                        }
+//                    },
+//                    plugins: {
+//                        annotation: {
+//                            annotations: [annotation]
+//                        },
+//                        zoom: {
+//                            pan: {
+//                                enabled: true,
+//                                mode: 'x',
+//                                onPanComplete: function({chart}) {
+//                                    if (panTimeout) {
+//                                        clearTimeout(panTimeout);
+//                                    }
+//                                    panTimeout = setTimeout(() => {
+//                                        const newMin = chart.scales.x.min;
+//                                        const newMax = chart.scales.x.max;
+//
+//                                        const newStartDate = moment(newMin).format('DD-MM-YYYY');
+//                                        const newEndDate = moment(newMax).format('DD-MM-YYYY');
+//                                        debugger;
+//                                        rangepicker.setStartDate(newStartDate);
+//                                        rangepicker.setEndDate(newEndDate);
+//
+//                                        updateChart();  // Update chart with new range
+//                                    }, 500); // 500ms delay
+//                                }
+//                            },
+//                            zoom: {
+//                                wheel: {
+//                                    enabled: true,
+//                                },
+//                                drag: {
+//                                    enabled: false,
+//                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+//                                },
+//                                pinch: {
+//                                    enabled: true
+//                                },
+//                                mode: 'x',
+//                                speed: 0.1,
+//                            }
+//                        }
+//                    }
+//                }
+//            });
+//
+//            restoreLegendVisibility(autobidderChart);
+//        },
+//        error: function(xhr, status, error) {
+//            console.error('AJAX error:', status, error);
+//        }
+//    });
+//}
+const dataCache = {};
+let debounceTimeout = null;
+ function updateChart() {
+                const timeInterval = $('#time_interval').val();
+                const dateRange = $('#date_range').val();
+                const destination = $('#destination').val();
+                const productId = $('#product_id').val();
+                const campaignId = '{{ campaign.id }}';
 
-            // Если график уже существует, уничтожаем его перед созданием нового
-            if (autobidderChart) {
-                autobidderChart.destroy();
-            }
-
-            // Проверка данных на наличие undefined или null значений
-            if (!data || !data.labels || !data.datasets) {
-                console.error('Invalid data received from the server');
-                return;
-            }
-
-            // Объединяем все наборы данных в один массив
-            const allDatasets = [];
-            data.datasets.forEach((datasetGroup, groupIndex) => {
-                if (!Array.isArray(datasetGroup)) {
-                    console.error('Invalid dataset group received from the server');
-                    return;
+                const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
+                const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
+                const today = moment().startOf('day');
+                if (autobidderChart) {
+                    saveLegendVisibility(autobidderChart);
                 }
-                datasetGroup.forEach(dataset => {
-                    if (!dataset || !dataset.label || !dataset.data) {
-                        console.error('Invalid dataset received from the server');
-                        return;
-                    }
-                    const color = getRandomColor(dataset.label);
-                    dataset.borderColor = color;
-                    dataset.backgroundColor = color;
-                    dataset.fill = false; // Не заполнять область под линией
-                    dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
-                    allDatasets.push(dataset);
-                });
-            });
 
-            const annotation = {
-                type: 'line',
-                borderColor: 'black',
-                borderWidth: 1,
-                display: (ctx) => ctx.chart.isDatasetVisible(1),
-                label: {
-                    display: true,
-                    content: 'Now',
-                    position: 'start'
-                },
-                scaleID: 'x',
-                value: '2024-07-18T11:00:00+00:00'
-            };
-
-            const labels = data.labels;
-
-            autobidderChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: allDatasets
-                },
-                options: {
-                    maintainAspectRatio: false, // Отключаем поддержку пропорций
-                    animation: false,
-                    scales: {
-                        x: {
-                            type: 'time',
-                            title: {
-                                display: true,
-                                text: 'Время'
+                if (dataCache[cacheKey] && !endDate.isSame(today)) {
+                    console.log("Load from cache: " + dateRange);
+                    renderChart(dataCache[cacheKey]);
+                } else {
+                    clearTimeout(debounceTimeout);
+                    debounceTimeout = setTimeout(() => {
+                        console.log("Load from server: " + dateRange);
+                        $.ajax({
+                            url: '{% url "api_get_chart_data" %}',
+                            method: 'POST',
+                            data: {
+                                time_interval: timeInterval,
+                                date_range: dateRange,
+                                destination: destination,
+                                product_id: productId,
+                                campaign_id: campaignId,
+                                csrfmiddlewaretoken: '{{ csrf_token }}'
                             },
-                            min: currentMin, // Восстанавливаем текущее состояние масштабирования
-                            max: currentMax, // Восстанавливаем текущее состояние масштабирования
-                            ticks: {
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 24 // Настраиваем максимальное количество отображаемых меток
+                            success: function(data) {
+                                if (!data || !data.labels || !data.datasets) {
+                                    console.error('Invalid data received from the server');
+                                    return;
+                                }
+
+                                dataCache[cacheKey] = data;
+                                renderChart(data);
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('AJAX error:', status, error);
+                            }
+                        });
+                    }, 500);
+                }
+            }
+
+            function renderChart(data) {
+                const ctx = document.getElementById('autobidderChart').getContext('2d');
+
+                let currentMin = null;
+                let currentMax = null;
+                if (autobidderChart && autobidderChart.options.scales.x) {
+                    currentMin = autobidderChart.options.scales.x.min;
+                    currentMax = autobidderChart.options.scales.x.max;
+                }
+
+                if (autobidderChart) {
+                    autobidderChart.destroy();
+                }
+
+                if (!data || !data.labels || !data.datasets) {
+    console.error('Invalid data received from the server');
+    return;
+}
+
+                const allDatasets = [];
+data.datasets.forEach((datasetGroup, groupIndex) => {
+    if (!Array.isArray(datasetGroup)) {
+        console.error('Invalid dataset group received from the server');
+        return;
+    }
+    datasetGroup.forEach(dataset => {
+        if (!dataset || !dataset.label || !dataset.data) {
+            console.error('Invalid dataset received from the server');
+            return;
+        }
+        const color = getRandomColor(dataset.label);
+        dataset.borderColor = color;
+        dataset.backgroundColor = color;
+        dataset.fill = false; // Не заполнять область под линией
+        dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+        allDatasets.push(dataset);
+    });
+});
+
+                const annotation = {
+                    type: 'line',
+                    borderColor: 'black',
+                    borderWidth: 1,
+                    display: (ctx) => ctx.chart.isDatasetVisible(1),
+                    label: {
+                        display: true,
+                        content: 'Now',
+                        position: 'start'
+                    },
+                    scaleID: 'x',
+                    value: '2024-07-18T11:00:00+00:00'
+                };
+
+                const labels = data.labels;
+
+                autobidderChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: allDatasets
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        animation: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                title: {
+                                    display: true,
+                                    text: 'Время'
+                                },
+                                min: currentMin,
+                                max: currentMax,
+                                ticks: {
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 24
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Позиция товара'
+                                },
+                                offset: true,
+                                stack: 'stack_1',
+                                stackWeight: 2,
+                            },
+                            y1: {
+                                title: {
+                                    display: true,
+                                    text: 'Статистика'
+                                },
+                                offset: true,
+                                stack: 'stack_1',
+                                stackWeight: 1,
+                                grid: {
+                                    drawOnChartArea: true
+                                },
                             }
                         },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Позиция товара'
-                            },
-                            offset: true,
-                            stack: 'stack_1',
-                            stackWeight: 2,
-                        },
-                        y1: {
-                            title: {
-                                display: true,
-                                text: 'Статистика'
-                            },
-                            offset: true,
-                            stack: 'stack_1',
-                            stackWeight: 1,
-                            grid: {
-                                drawOnChartArea: false // Отключаем сетку на второй оси
-                            },
-                        }
-                    },
-                    plugins: {
-                        annotation: {
-                            annotations: [annotation]
-                        },
-                        zoom: {
-                            pan: {
-                                enabled: true,
-                                mode: 'x',
+                        plugins: {
+                            annotation: {
+                                annotations: [annotation]
                             },
                             zoom: {
-                                wheel: {
+                                pan: {
                                     enabled: true,
+                                    mode: 'x',
+                                    onPanComplete: function({chart}) {
+                                        if (panTimeout) {
+                                            clearTimeout(panTimeout);
+                                        }
+                                        panTimeout = setTimeout(() => {
+                                            const newMin = chart.scales.x.min;
+                                            const newMax = chart.scales.x.max;
+
+                                            const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                            const newEndDate = moment(newMax).format('DD-MM-YYYY');
+
+                                            rangepicker.setStartDate(newStartDate);
+                                            rangepicker.setEndDate(newEndDate);
+
+                                            updateChart();
+                                        }, 500);
+                                    }
                                 },
-                                drag: {
-                                    enabled: false,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                },
-                                pinch: {
-                                    enabled: true
-                                },
-                                mode: 'x',
-                                speed: 0.1,
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                    },
+                                    drag: {
+                                        enabled: false,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x',
+                                    speed: 0.1,
+                                    onZoomComplete: function({chart}) {
+                                        if (panTimeout) {
+                                            clearTimeout(panTimeout);
+                                        }
+                                        panTimeout = setTimeout(() => {
+                                            const newMin = chart.scales.x.min;
+                                            const newMax = chart.scales.x.max;
+
+                                            const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                            const newEndDate = moment(newMax).format('DD-MM-YYYY');
+
+                                            rangepicker.setStartDate(newStartDate);
+                                            rangepicker.setEndDate(newEndDate);
+
+                                            updateChart();
+                                        }, 500);
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            restoreLegendVisibility(autobidderChart);
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX error:', status, error);
-        }
-    });
-}
+                restoreLegendVisibility(autobidderChart);
+            }
 
 
 
