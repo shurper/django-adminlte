@@ -186,11 +186,10 @@
                 </div>
                 <button type="button" class="btn btn-primary" onclick="updateChart()">Обновить график</button>
 
-                <!-- Chart.js canvas -->
-                <canvas id="autobidderChart" style="height: 400px;"></canvas>
-
-                <canvas id="statChart"></canvas>
-                <button type="button" class="btn btn-primary" onclick="updateStatChart()">Обновить график статистики</button>
+                <div style=" overflow-x: auto;">
+                    <!-- Chart.js canvas -->
+                <canvas id="autobidderChart" width="2000" height="800"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -199,7 +198,12 @@
 <script src="{% static 'plugins/moment/moment.min.js' %}"></script>
 <script src="{% static 'plugins/daterangepicker/daterangepicker.js' %}"></script>
 <script src="{% static 'plugins/select2/js/select2.full.min.js' %}"></script>
-<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>
+<!--<script src="{% static 'plugins/chart.js/Chart.min.js' %}"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
 
 <script>
     function addPositionRange() {
@@ -359,9 +363,7 @@
         });
     }
 
-    // Function to update the chart
-    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
-    let statChart; // Глобальная переменная для хранения экземпляра графика
+
 
     function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -399,13 +401,40 @@
         return color;
     }
 
+function saveLegendVisibility(chart) {
+    const legendState = {};
+    chart.data.datasets.forEach((dataset, index) => {
+        legendState[dataset.label] = !chart.isDatasetVisible(index);
+    });
+    setCookie('legendState', JSON.stringify(legendState), 30);
+}
+
+function restoreLegendVisibility(chart) {
+    const legendState = getCookie('legendState');
+    if (legendState) {
+        const parsedState = JSON.parse(legendState);
+        console.log('Legend state loaded:', parsedState);
+        chart.data.datasets.forEach((dataset, index) => {
+            if (parsedState[dataset.label] !== undefined) {
+                chart.setDatasetVisibility(index, !parsedState[dataset.label]);
+            }
+        });
+        chart.update();
+    }
+}
+
+// Function to update the chart
+    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
+    let statChart; // Глобальная переменная для хранения экземпляра графика
 function updateChart() {
     const timeInterval = $('#time_interval').val();
     const dateRange = $('#date_range').val();
     const destination = $('#destination').val();
     const productId = $('#product_id').val();
     const campaignId = '{{ campaign.id }}';
-
+    if (autobidderChart) {
+                saveLegendVisibility(autobidderChart);
+    }
     $.ajax({
         url: '{% url "api_get_chart_data" %}',
         method: 'POST',
@@ -420,119 +449,148 @@ function updateChart() {
         success: function(data) {
             const ctx = document.getElementById('autobidderChart').getContext('2d');
 
+            // Сохраняем текущее состояние масштабирования и панорамирования
+            let currentMin = null;
+            let currentMax = null;
+            if (autobidderChart && autobidderChart.options.scales.x) {
+                currentMin = autobidderChart.options.scales.x.min;
+                currentMax = autobidderChart.options.scales.x.max;
+            }
+
             // Если график уже существует, уничтожаем его перед созданием нового
             if (autobidderChart) {
                 autobidderChart.destroy();
             }
 
-            // Применяем случайные цвета к каждому dataset
-            data.datasets.forEach(dataset => {
+            // Проверка данных на наличие undefined или null значений
+            if (!data || !data.labels || !data.datasets) {
+                console.error('Invalid data received from the server');
+                return;
+            }
 
-                const color = getRandomColor(dataset.label);
-                dataset.borderColor = color;
-                dataset.backgroundColor = color;
-                dataset.fill = false; // Не заполнять область под линией
+            // Объединяем все наборы данных в один массив
+            const allDatasets = [];
+            data.datasets.forEach((datasetGroup, groupIndex) => {
+                if (!Array.isArray(datasetGroup)) {
+                    console.error('Invalid dataset group received from the server');
+                    return;
+                }
+                datasetGroup.forEach(dataset => {
+                    if (!dataset || !dataset.label || !dataset.data) {
+                        console.error('Invalid dataset received from the server');
+                        return;
+                    }
+                    const color = getRandomColor(dataset.label);
+                    dataset.borderColor = color;
+                    dataset.backgroundColor = color;
+                    dataset.fill = false; // Не заполнять область под линией
+                    dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+                    allDatasets.push(dataset);
+                });
             });
+
+            const annotation = {
+                type: 'line',
+                borderColor: 'black',
+                borderWidth: 1,
+                display: (ctx) => ctx.chart.isDatasetVisible(1),
+                label: {
+                    display: true,
+                    content: 'Now',
+                    position: 'start'
+                },
+                scaleID: 'x',
+                value: '2024-07-18T11:00:00+00:00'
+            };
+
+            const labels = data.labels;
 
             autobidderChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.labels,
-                    datasets: data.datasets
+                    labels: labels,
+                    datasets: allDatasets
                 },
                 options: {
+                    maintainAspectRatio: false, // Отключаем поддержку пропорций
                     animation: false,
                     scales: {
                         x: {
                             type: 'time',
-                            time: {
-                                unit: timeInterval
-                            },
                             title: {
                                 display: true,
                                 text: 'Время'
+                            },
+                            min: currentMin, // Восстанавливаем текущее состояние масштабирования
+                            max: currentMax, // Восстанавливаем текущее состояние масштабирования
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 24 // Настраиваем максимальное количество отображаемых меток
                             }
                         },
                         y: {
                             title: {
                                 display: true,
                                 text: 'Позиция товара'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    });
-}
-function updateStatChart() {
-    const timeInterval = $('#time_interval').val();
-    const dateRange = $('#date_range').val();
-    const destination = $('#destination').val();
-    const productId = $('#product_id').val();
-    const campaignId = '{{ campaign.id }}';
-
-    $.ajax({
-        url: '{% url "api_get_stat_chart_data" %}',
-        method: 'POST',
-        data: {
-            time_interval: timeInterval,
-            date_range: dateRange,
-            destination: destination,
-            product_id: productId,
-            campaign_id: campaignId,
-            csrfmiddlewaretoken: '{{ csrf_token }}'
-        },
-        success: function(data) {
-            const ctx = document.getElementById('statChart').getContext('2d');
-
-            // Если график уже существует, уничтожаем его перед созданием нового
-            if (statChart) {
-                statChart.destroy();
-            }
-
-            // Применяем случайные цвета к каждому dataset
-            data.datasets.forEach(dataset => {
-                const color = getRandomColor(dataset.label);
-                dataset.borderColor = color;
-                dataset.backgroundColor = color;
-                dataset.fill = false; // Не заполнять область под линией
-            });
-
-            statChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: data.datasets
-                },
-                options: {
-                    animation: false,
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: timeInterval
                             },
-                            title: {
-                                display: true,
-                                text: 'Время'
-                            }
+                            offset: true,
+                            stack: 'stack_1',
+                            stackWeight: 2,
                         },
-                        y: {
+                        y1: {
                             title: {
                                 display: true,
-                                text: 'Единицы'
+                                text: 'Статистика'
+                            },
+                            offset: true,
+                            stack: 'stack_1',
+                            stackWeight: 1,
+                            grid: {
+                                drawOnChartArea: false // Отключаем сетку на второй оси
+                            },
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: [annotation]
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                drag: {
+                                    enabled: false,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                                speed: 0.1,
                             }
                         }
                     }
                 }
             });
+
+            restoreLegendVisibility(autobidderChart);
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX error:', status, error);
         }
     });
 }
+
+
+
     function loadCharts(){
         updateChart();
-        updateStatChart();
     }
     $('#ab_monitor').find('select, input').on('change', function(){
         loadCharts();
@@ -541,8 +599,7 @@ function updateStatChart() {
     setInterval(()=>{
         if(chartUpdaterInProgress) return true;
         chartUpdaterInProgress = true;
-        updateChart();
-        updateStatChart();
+        loadCharts();
         chartUpdaterInProgress = false;
 
     },10000);
