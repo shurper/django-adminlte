@@ -454,7 +454,7 @@ def get_campaign_statistics(store, advert_ids):
 
     # print("HEEREEE")
     # print(payload)
-    # print(response.json())
+    print(response.json())
     if response.status_code == 200:
         return response.json()
     else:

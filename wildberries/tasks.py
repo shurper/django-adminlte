@@ -19,18 +19,22 @@ def fetch_and_save_campaigns(store_id):
         store = Store.objects.get(id=store_id, status="active")
 
         campaign_list_data = get_campaign_list(store)
-        if campaign_list_data:
+        logger.debug(f'Campaign list data: {campaign_list_data}')
+
+        if campaign_list_data and 'adverts' in campaign_list_data:
             logger.info(f'Fetched campaign list successfully for Store {store.name}')
             advert_ids = []
             for advert in campaign_list_data['adverts']:
                 advert_ids.extend([item['advertId'] for item in advert['advert_list']])
             campaign_details_data = get_campaign_details(store, advert_ids)
+            logger.debug(f'Campaign details data: {campaign_details_data}')
+
             if campaign_details_data:
                 save_campaign_details(store, campaign_details_data)
                 logger.info(f'Saved campaign details for Store {store.name}')
                 # logger.info(f'Fetched data: {campaign_details_data}')
         else:
-            logger.warning(f'No campaign data received for Store {store.name}')
+            logger.warning(f'No campaign data received or invalid format for Store {store.name}')
     except Store.DoesNotExist:
         logger.error(f'Store with id {store_id} does not exist')
 
