@@ -582,15 +582,15 @@ while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
                             time: {
                                 unit: 'hour',
                                 displayFormats: {
-                                    hour: 'hA', // Формат времени для часовых делений, например, '8AM'
-                                    day: 'D MMM`YY' // Формат даты для дневных делений, например, 'Aug 7'
+                                    hour: 'HH:mm',
+                                    day: 'D MMM`YY'
                                 }
                             },
                             ticks: {
                                 major: {
                                     enabled: true, // Включить крупные деления
                                     displayFormats: {
-                                        day: 'MMM D' // Формат даты для крупных делений
+                                        day: 'D MMM`YY' // Формат даты для крупных делений
                                     }
                                 },
                                 source: 'auto',
