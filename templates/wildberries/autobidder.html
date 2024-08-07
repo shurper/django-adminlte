@@ -451,7 +451,7 @@ let debounceTimeout = null;
                     saveLegendVisibility(autobidderChart);
                 }
 
-                if (dataCache[cacheKey] && !endDate.isSame(today)) {
+                if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
                     console.log("Load from cache: " + dateRange);
                     renderChart(dataCache[cacheKey]);
                 } else {
@@ -529,7 +529,7 @@ data.datasets.forEach((datasetGroup, groupIndex) => {
                     type: 'line',
                     borderColor: 'grey',
                     borderWidth: 1,
-                    display: (ctx) => ctx.chart.isDatasetVisible(1),
+                    display: true,
                     label: {
                         display: true,
                         content: moment().format('HH:mm'),
