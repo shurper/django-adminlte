@@ -525,6 +525,25 @@ data.datasets.forEach((datasetGroup, groupIndex) => {
     });
 });
 
+const dayAnnotations = [];
+let currentDay = moment(data.labels[0]).startOf('day');
+let nextDay = currentDay.clone().add(1, 'day');
+let isGrey = true; // Начнем с серой полосы
+
+while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
+    dayAnnotations.push({
+        type: 'box',
+        xMin: currentDay.toISOString(),
+        xMax: nextDay.toISOString(),
+        backgroundColor: isGrey ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
+        borderWidth: 0
+    });
+
+    currentDay = nextDay.clone();
+    nextDay = currentDay.clone().add(1, 'day');
+    isGrey = !isGrey; // Чередуем цвет полосы
+}
+
                 const annotation = {
                     type: 'line',
                     borderColor: 'grey',
@@ -553,19 +572,33 @@ data.datasets.forEach((datasetGroup, groupIndex) => {
                         animation: false,
                         scales: {
                             x: {
-                                type: 'time',
-                                title: {
-                                    display: true,
-                                    text: 'Время'
-                                },
-                                min: currentMin,
-                                max: currentMax,
-                                ticks: {
-                                    maxRotation: 0,
-                                    autoSkip: true,
-                                    maxTicksLimit: 24
+                            type: 'time',
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            },
+                            min: currentMin,
+                            max: currentMax,
+                            time: {
+                                unit: 'hour',
+                                displayFormats: {
+                                    hour: 'hA', // Формат времени для часовых делений, например, '8AM'
+                                    day: 'D MMM`YY' // Формат даты для дневных делений, например, 'Aug 7'
                                 }
                             },
+                            ticks: {
+                                major: {
+                                    enabled: true, // Включить крупные деления
+                                    displayFormats: {
+                                        day: 'MMM D' // Формат даты для крупных делений
+                                    }
+                                },
+                                source: 'auto',
+                                autoSkip: true,
+                                maxRotation: 0,
+                                maxTicksLimit: 24
+                            }
+                        },
                             y: {
                                 title: {
                                     display: true,
@@ -590,7 +623,7 @@ data.datasets.forEach((datasetGroup, groupIndex) => {
                         },
                         plugins: {
                             annotation: {
-                                annotations: [annotation]
+                                annotations: [...dayAnnotations, annotation]
                             },
                             zoom: {
                                 pan: {
