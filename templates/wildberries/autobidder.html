@@ -145,45 +145,49 @@
         <!-- Logs and Chart -->
         <div class="card" id="ab_monitor">
             <div class="card-header">
-                <h3 class="card-title">Логи AutoBidder</h3>
+                <h3 class="card-title">Монитор</h3>
             </div>
             <div class="card-body">
-                <!-- Selectors for the chart -->
-                <div class="form-group">
-                    <label for="time_interval">Интервал времени:</label>
-                    <select class="form-control select2bs4" id="time_interval">
-                        <option value="15m">15 минут</option>
-                        <option value="5m">5 минут</option>
-                        <option value="1h">1 час</option>
-                        <option value="4h">4 часа</option>
-                        <option value="1d">День</option>
-                        <option value="1w">Неделя</option>
-                        <option value="1M">Месяц</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Период данных:</label>
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text">
-                                <i class="far fa-calendar-alt"></i>
-                            </span>
+                <div class="row">
+                    <div class="form-group col-2">
+                        <label>Период данных:</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">
+                                    <i class="far fa-calendar-alt"></i>
+                                </span>
+                            </div>
+                            <input type="text" class="form-control float-right" id="date_range">
                         </div>
-                        <input type="text" class="form-control float-right" id="date_range">
+                    </div>
+                        <!-- Selectors for the chart -->
+                    <div class="form-group col-2">
+                        <label for="time_interval">Интервал:</label>
+                        <select class="form-control select2bs4" id="time_interval">
+                            <option value="15m">15 минут</option>
+                            <option value="5m">5 минут</option>
+                            <option value="1h">1 час</option>
+                            <option value="4h">4 часа</option>
+                            <option value="1d">День</option>
+                            <option value="1w">Неделя</option>
+                            <option value="1M">Месяц</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group col-4">
+                        <label for="destination">Локация:</label>
+                        <select class="form-control select2bs4" id="destination">
+                            <!-- Options dynamically generated from the backend -->
+                        </select>
+                    </div>
+                    <div class="form-group col-4">
+                        <label for="product_id">Товар:</label>
+                        <select class="form-control select2bs4" id="product_id">
+                            <!-- Options dynamically generated from the backend -->
+                        </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="destination">Локация:</label>
-                    <select class="form-control select2bs4" id="destination">
-                        <!-- Options dynamically generated from the backend -->
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="product_id">Товар:</label>
-                    <select class="form-control select2bs4" id="product_id">
-                        <!-- Options dynamically generated from the backend -->
-                    </select>
-                </div>
+
 
 
 
@@ -211,6 +215,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair"></script>
+
 
 <script>
     function addPositionRange() {
@@ -624,6 +630,51 @@ while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
                         plugins: {
                             annotation: {
                                 annotations: [...dayAnnotations, annotation]
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                align: 'center',
+                                labels: {
+                                    boxWidth: 15,
+                                    boxHeight: 15,
+                                    font: {
+                                        size: 12,
+                                        family: 'Arial',
+                                        style: 'normal',
+                                        weight: 'normal'
+                                    },
+                                    color: '#333',
+                                    padding: 10,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            crosshair: {
+                                line: {
+                                    color: 'black',  // Цвет перекрестия
+                                    width: 1         // Толщина линии перекрестия
+                                },
+                                sync: {
+                                    enabled: false,            // Синхронизация между графиками
+                                    group: 1,                  // Группа синхронизации
+                                    suppressTooltips: false    // Подавление тултипов
+                                },
+                                zoom: {
+                                    enabled: false,                                      // Включение увеличения
+                                    zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',      // Цвет области увеличения
+                                    zoomboxBorderColor: '#48F',                          // Цвет границы области увеличения
+                                    zoomButtonText: 'Reset Zoom',                        // Текст кнопки сброса увеличения
+                                    zoomButtonClass: 'reset-zoom-button'                 // Класс кнопки сброса увеличения
+                                },
+                                callbacks: {
+                                    beforeZoom: function(start, end) {                  // Колбэк перед увеличением
+                                        return true;
+                                    },
+                                    afterZoom: function(start, end) {                   // Колбэк после увеличения
+                                        return true;
+                                    }
+                                }
                             },
                             zoom: {
                                 pan: {

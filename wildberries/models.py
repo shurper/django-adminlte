@@ -233,7 +233,8 @@ class Campaign(models.Model):
         stats_by_interval = defaultdict(lambda: defaultdict(list))
 
         for stat in base_stats:
-            interval_start = (stat['platform_statistic__campaign_statistic__date'] - start_date) // time_delta * time_delta + start_date
+            interval_start = (stat[
+                                  'platform_statistic__campaign_statistic__date'] - start_date) // time_delta * time_delta + start_date
             stats_by_interval[interval_start]['views'].append(stat['views'])
             stats_by_interval[interval_start]['clicks'].append(stat['clicks'])
             stats_by_interval[interval_start]['ctr'].append(stat['ctr'])
@@ -493,6 +494,7 @@ class PositionTrackingTask(models.Model):
     actual_position = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    watcher_data = models.JSONField(verbose_name='watcher_data', default=list)  # Данные полученные от бота. Перезаписваются при каждом отчете от бота, но каждый раз сохраняются в AutobidderLog
 
     def current_user_has_access(self, request):
         return self.campaign.store.user == request.user
@@ -538,21 +540,94 @@ class WeeklySchedule(models.Model):
 
 
 class AutoBidderLog(models.Model):
+    """
+    Модель для хранения логов работы автобиддера.
+
+    Attributes:
+        campaign (ForeignKey): Ссылка на рекламную кампанию.
+        timestamp (DateTimeField): Время записи лога.
+        message (TextField): Сообщение лога.
+        keyword (TextField): Ключевая фраза мониторинга.
+        depth (IntegerField): Глубина мониторинга - количество страниц для просмотра на ВБ.
+        destination (IntegerField): Локация, из которой производится мониторинг.
+        product_id (IntegerField): ID продукта, который мониторится.
+        position (IntegerField): Позиция продукта в выдаче.
+        clicks (IntegerField): Количество кликов по карточке продукта за текущую сессию.
+        cards (IntegerField): Количество добавлений продукта в корзину за текущую сессию.
+        orders (IntegerField): Количество заказов продукта за текущую сессию.
+        position_delta (IntegerField): Изменение позиции продукта в результате продвижения.
+        product_price (FloatField): Текущая цена продукта.
+        average_cpm (FloatField): Средний CPM на первой странице ВБ.
+        cpm (FloatField): Текущий CPM для рекламной кампании продукта.
+        before_average_cpm (FloatField): Средний CPM у конкурентов перед продуктом.
+        min_cpm (FloatField): Минимальный CPM на первой странице.
+        before_min_cpm (FloatField): Минимальный CPM у конкурентов перед продуктом.
+        max_cpm (FloatField): Максимальный CPM на первой странице.
+        before_max_cpm (FloatField): Максимальный CPM у конкурентов перед продуктом.
+        average_advert_step_cost (FloatField): Средняя стоимость продвижения на 1 позицию.
+        before_average_advert_step_cost (FloatField): Средняя стоимость продвижения на 1 позицию у конкурентов перед продуктом.
+        advert_density (FloatField): Коэффициент плотности рекламы на первой странице.
+        advert_competitors_count (IntegerField): Количество рекламных конкурентов на первой странице.
+        advert_competitors_before (IntegerField): Количество конкурентов перед продуктом.
+        advert_competitors_after (IntegerField): Количество конкурентов после продукта.
+        advert_position (IntegerField): Позиция продукта среди рекламных карточек.
+        advert_count (IntegerField): Количество рекламных карточек на первой странице.
+        cpms (JSONField): Список всех ставок CPM конкурентов.
+        advert_step_costs (JSONField): Список стоимости продвижения на 1 позицию для конкурентов.
+        advert_competitors (JSONField): Список ID конкурентов на первой странице.
+        bid (FloatField): Текущая ставка автобиддера.
+    """
+
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
     message = models.TextField()
-    keyword = models.TextField(null=True, blank=True)
-    depth = models.IntegerField(blank=True, null=True, default=2)
-    destination = models.IntegerField(null=True, blank=True)
-    product_id = models.IntegerField(null=True, blank=True)
-    position = models.IntegerField(null=True, blank=True)
-    clicks = models.IntegerField(null=True, blank=True)
-    cards = models.IntegerField(null=True, blank=True)
-    orders = models.IntegerField(null=True, blank=True)
-    bid = models.FloatField(null=True, blank=True)
+    keyword = models.TextField(null=True, blank=True)  # Ключевая фраза мониторинга
+    depth = models.IntegerField(blank=True, null=True, default=2)  # Глубина мониторинга
+    destination = models.IntegerField(null=True, blank=True)  # Локация мониторинга
+    product_id = models.IntegerField(null=True, blank=True)  # ID продукта
+    position = models.IntegerField(null=True, blank=True)  # Позиция продукта
+    clicks = models.IntegerField(null=True, blank=True)  # Количество кликов за сессию
+    cards = models.IntegerField(null=True, blank=True)  # Количество корзин за сессию
+    orders = models.IntegerField(null=True, blank=True)  # Количество заказов за сессию
+    position_delta = models.IntegerField(null=True, blank=True)  # Изменение позиции продукта
+    product_price = models.FloatField(null=True, blank=True)  # Текущая цена продукта
+    average_cpm = models.FloatField(null=True, blank=True)  # Средний CPM на первой странице
+    cpm = models.FloatField(null=True, blank=True)  # Текущий CPM для продукта
+    before_average_cpm = models.FloatField(null=True, blank=True)  # Средний CPM у конкурентов
+    min_cpm = models.FloatField(null=True, blank=True)  # Минимальный CPM на первой странице
+    before_min_cpm = models.FloatField(null=True, blank=True)  # Минимальный CPM у конкурентов
+    max_cpm = models.FloatField(null=True, blank=True)  # Максимальный CPM на первой странице
+    before_max_cpm = models.FloatField(null=True, blank=True)  # Максимальный CPM у конкурентов
+    average_advert_step_cost = models.FloatField(null=True, blank=True)  # Средняя стоимость за продвижение
+    before_average_advert_step_cost = models.FloatField(null=True, blank=True)  # Средняя стоимость за продвижение у конкурентов
+    advert_density = models.FloatField(null=True, blank=True)  # Коэффициент плотности рекламы
+    advert_competitors_count = models.IntegerField(null=True, blank=True)  # Количество рекламных конкурентов
+    advert_competitors_before = models.IntegerField(null=True, blank=True)  # Количество конкурентов перед продуктом
+    advert_competitors_after = models.IntegerField(null=True, blank=True)  # Количество конкурентов после продукта
+    advert_position = models.IntegerField(null=True, blank=True)  # Позиция продукта среди рекламы
+    advert_count = models.IntegerField(null=True, blank=True)  # Количество рекламных карточек
+    cpms = models.JSONField(verbose_name='cpms', default=list)  # Ставки CPM конкурентов
+    advert_step_costs = models.JSONField(verbose_name='advert_step_costs', default=list)  # Стоимость за продвижение конкурентов
+    advert_competitors = models.JSONField(verbose_name='advert_competitors', default=list)  # ID конкурентов
+    bid = models.FloatField(null=True, blank=True)  # Текущая ставка автобиддера
 
     def current_user_has_access(self, request):
+        """
+        Проверяет, имеет ли текущий пользователь доступ к этому логу.
+
+        Args:
+            request (HttpRequest): Запрос от пользователя.
+
+        Returns:
+            bool: True, если пользователь имеет доступ, иначе False.
+        """
         return self.campaign.store.user == request.user
 
     def __str__(self):
+        """
+        Возвращает строковое представление объекта.
+
+        Returns:
+            str: Строка, содержащая время записи и сообщение.
+        """
         return f"{self.timestamp} - {self.message}"

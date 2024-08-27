@@ -126,7 +126,27 @@ def run_autobidder():
                 product_id=task.product_id,
                 destination=task.destination,
                 depth=task.depth,
-                keyword=task.keyword
+                keyword=task.keyword,
+                position_delta=getattr(task.watcher_data, 'position_delta', None),
+                product_price=getattr(task.watcher_data, 'product_price', None),
+                average_cpm=getattr(task.watcher_data, 'average_cpm', None),
+                cpm=getattr(task.watcher_data, 'cpm', None),
+                before_average_cpm=getattr(task.watcher_data, 'before_average_cpm', None),
+                min_cpm=getattr(task.watcher_data, 'min_cpm', None),
+                before_min_cpm=getattr(task.watcher_data, 'before_min_cpm', None),
+                max_cpm=getattr(task.watcher_data, 'max_cpm', None),
+                before_max_cpm=getattr(task.watcher_data, 'before_max_cpm', None),
+                average_advert_step_cost=getattr(task.watcher_data, 'average_advert_step_cost', None),
+                before_average_advert_step_cost=getattr(task.watcher_data, 'before_average_advert_step_cost', None),
+                advert_density=getattr(task.watcher_data, 'advert_density', None),
+                advert_competitors_count=getattr(task.watcher_data, 'advert_competitors_count', None),
+                advert_competitors_before=getattr(task.watcher_data, 'advert_competitors_before', None),
+                advert_competitors_after=getattr(task.watcher_data, 'advert_competitors_after', None),
+                advert_position=getattr(task.watcher_data, 'advert_position', None),
+                advert_count=getattr(task.watcher_data, 'advert_count', None),
+                cpms=getattr(task.watcher_data, 'cpms', []),
+                advert_step_costs=getattr(task.watcher_data, 'advert_step_costs', []),
+                advert_competitors=getattr(task.watcher_data, 'advert_competitors', []),
             )
 
         # Update task details
