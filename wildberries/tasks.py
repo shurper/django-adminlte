@@ -116,6 +116,7 @@ def run_autobidder():
         if task.actual_position is not None:
             new_bid = determine_new_bid(autobidder, task.actual_position)
             print(f"Autobidder for {autobidder.campaign.name} is going to set a new bid: {new_bid}.")
+            print(f"Autobidder task data {task.watcher_data}")
             update_bid(autobidder, new_bid)
             from .models import AutoBidderLog
             AutoBidderLog.objects.create(
