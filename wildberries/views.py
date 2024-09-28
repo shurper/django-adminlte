@@ -17,7 +17,7 @@ from django.db.models import Sum, FloatField, ExpressionWrapper, Case, When
 from django.core.cache import cache
 
 from wildberries.forms import SignUpForm, StoreForm, PositionRangeForm, IntraDayScheduleForm, WeeklyScheduleForm, \
-    CreateAutoBidderSettingsForm
+    CreateAutoBidderSettingsForm, CreateMonitoringSettingsForm, AddKeywordsMonitoringForm
 from wildberries.models import Store, Campaign, CampaignStatistic, PlatformStatistic, CampaignKeywordStatistic, \
     KeywordData, AutoCampaignKeywordStatistic, AutoBidderSettings, AutoBidderLog, PositionTrackingTask, PositionRange, \
     IntraDaySchedule, WeeklySchedule, ProductStatistic
@@ -270,6 +270,59 @@ def autobidder_view(request, campaign_id):
     }
 
     return render(request, 'wildberries/autobidder.html', context)
+
+def monitoring_view(request, campaign_id):
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+    autobidder_settings, created = AutoBidderSettings.objects.get_or_create(campaign=campaign)
+
+    if not autobidder_settings.current_user_has_access(request):
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        if 'create_settings' in request.POST:
+            create_form = CreateMonitoringSettingsForm(request.POST, instance=autobidder_settings)
+            if create_form.is_valid():
+                create_form.save()
+
+    create_form = CreateMonitoringSettingsForm(instance=autobidder_settings)
+
+    context = {
+        'campaign': campaign,
+        'autobidder_settings': autobidder_settings,
+        'create_form': create_form,
+    }
+
+    return render(request, 'wildberries/monitoring.html', context)
+
+
+def monitoring_additional_words_view(request, campaign_id):
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+
+    autobidder_settings, created = AutoBidderSettings.objects.get_or_create(campaign=campaign)
+
+    if not autobidder_settings.current_user_has_access(request):
+        return HttpResponseForbidden()
+
+    # Получаем или создаем объект KeywordData, связанный с кампанией
+    keyword_data, created = KeywordData.objects.get_or_create(campaign=campaign)
+
+
+    if request.method == "POST":
+        if 'create_settings' in request.POST:
+            create_form = AddKeywordsMonitoringForm(request.POST, instance=keyword_data)
+            if create_form.is_valid():
+                create_form.save()
+
+    create_form = AddKeywordsMonitoringForm(instance=keyword_data)
+
+    context = {
+        'campaign': campaign,
+        'autobidder_settings': autobidder_settings,
+        'create_form': create_form,
+    }
+
+    return render(request, 'wildberries/monitoring_additional_words_view.html', context)
+
 
 
 @csrf_exempt

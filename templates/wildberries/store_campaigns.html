@@ -46,6 +46,7 @@
                         <td>{{ campaign.payment_type }}</td>
                         <td>
                             <a href="{% url 'campaign_detail' campaign.id %}" class="btn btn-primary">Открыть</a>
+                            <a href="{% url 'monitoring_view' campaign.id %}" class="btn btn-primary">Монитор</a>
                         </td>
                     </tr>
                     {% endfor %}

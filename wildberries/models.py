@@ -420,6 +420,7 @@ class KeywordData(models.Model):
     strong = models.JSONField()
     excluded = models.JSONField()
     pluse = models.JSONField()
+    additional = models.JSONField(verbose_name='additional', default=list)
     fixed = models.BooleanField()
 
     def current_user_has_access(self, request):
@@ -428,6 +429,12 @@ class KeywordData(models.Model):
     @classmethod
     def get_fixed_keywords_choices(cls, campaign_id):
         keywords = cls.objects.filter(campaign_id=campaign_id).values_list('pluse', flat=True)
+        flat_keywords = [item for sublist in keywords for item in sublist]
+        return [(keyword, keyword) for keyword in flat_keywords]
+
+    @classmethod
+    def get_additional_keywords_choices(cls, campaign_id):
+        keywords = cls.objects.filter(campaign_id=campaign_id).values_list('additional', flat=True)
         flat_keywords = [item for sublist in keywords for item in sublist]
         return [(keyword, keyword) for keyword in flat_keywords]
 
@@ -449,16 +456,16 @@ class AutoCampaignKeywordStatistic(models.Model):
 
 
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 
 
 class AutoBidderSettings(models.Model):
     campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE)
     product_id = models.IntegerField(blank=True, null=True)
-    depth = models.IntegerField(blank=True, null=True, default=2)
+    depth = models.IntegerField(blank=True, null=True, default=1)
     destination = models.IntegerField(blank=True, null=True)
     keyword = models.CharField(max_length=255, blank=True, null=True)
     keywords_monitoring = models.JSONField(verbose_name='keywords_monitoring', default=list)
+    keywords_monitoring_add = models.JSONField(verbose_name='keywords_monitoring_add', default=list)
     destinations_monitoring = models.JSONField(verbose_name='destinations_monitoring', default=list)
     max_bid = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_enabled = models.BooleanField(default=True)

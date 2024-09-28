@@ -174,7 +174,8 @@ def run_monitoring():
             print(f"Monitoring for {autobidder.campaign.name} is not within schedule. Rejected.")
             continue
 
-        for keyword in autobidder.keywords_monitoring:
+        combined_keywords = list(set([kw for kw in autobidder.keywords_monitoring + autobidder.keywords_monitoring_add if kw.strip()]))
+        for keyword in combined_keywords:
             for destination in autobidder.destinations_monitoring:
                 # Try to retrieve an existing task in 'request' status
                 task = PositionTrackingTask.objects.filter(

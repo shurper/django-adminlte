@@ -1,0 +1,49 @@
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+
+{% block title %}{{ campaign.name }}{% endblock title %}
+
+{% block extrastyle %}
+<link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/select2/css/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="create_settings" value="create_settings">
+            <input type="hidden" name="id" value="create_settings">
+            <div class="card card-primary">
+                <form method="post">
+                    <div class="card-header">
+                        <h3 class="card-title">Дополнительные ключевые фразы</h3>
+                    </div>
+                    <div class="card-body">
+
+                        {% csrf_token %}
+                        {% for field in create_form %}
+                            <div class="form-group">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ field.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" name="create_settings" class="btn btn-success">Применить</button>
+                        <a class="btn btn-primary right" href="{% url 'monitoring_view' campaign.id %}">Перейти на страницу мониторинга</a>
+                    </div>
+                </form>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
