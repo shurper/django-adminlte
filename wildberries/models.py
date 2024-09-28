@@ -486,7 +486,12 @@ class AutoBidderSettings(models.Model):
         super().save(*args, **kwargs)
 
         if current_instance:
-            if current_instance.keyword != self.keyword or current_instance.keywords_monitoring != self.keywords_monitoring or current_instance.destinations_monitoring != self.destinations_monitoring:
+            if (
+                    current_instance.keyword != self.keyword
+                    or current_instance.keywords_monitoring != self.keywords_monitoring
+                    or current_instance.keywords_monitoring_add != self.keywords_monitoring_add
+                    or current_instance.destinations_monitoring != self.destinations_monitoring
+            ):
                 PositionTrackingTask.objects.filter(campaign=self.campaign).delete()
 
 
