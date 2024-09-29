@@ -137,7 +137,7 @@
 
 <script>
     $.ajaxSetup({
-    headers: { "X-CSRFToken": {{csrf_token}} }
+    headers: { "X-CSRFToken": "{{csrf_token}}" }
 });
 // Initialize Select2 Elements
     jQuery('.select2bs4').select2({
