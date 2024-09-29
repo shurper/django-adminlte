@@ -79,6 +79,83 @@ class Campaign(models.Model):
     def current_user_has_access(self, request):
         return self.store.user == request.user
 
+    def get_cpms_for_chart(self, product_id, destination_id, start_date, end_date, time_interval, keyword):
+        now = timezone.now()
+        campaign_id = self.id
+
+        # Group logs by the chosen time interval and calculate the desired metrics
+        time_deltas = {
+            '5m': timedelta(minutes=5),
+            '15m': timedelta(minutes=15),
+            '1h': timedelta(hours=1),
+            '4h': timedelta(hours=4),
+            '1d': timedelta(days=1),
+            '1w': timedelta(weeks=1),
+            '1M': timedelta(days=30),
+        }
+        time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+
+        labels = []
+        datasets = defaultdict(lambda: {'label': '', 'data': []})
+
+        # Extract logs only for the specified keyword
+        logs = AutoBidderLog.objects.filter(
+            timestamp__range=(start_date, end_date),
+            destination=destination_id,
+            product_id=product_id,
+            campaign_id=campaign_id,
+            keyword=keyword
+        ).values('timestamp', 'advert_competitors', 'cpms')
+
+        # Prepare a dict to store logs by intervals
+        interval_logs = defaultdict(list)
+
+        for log in logs:
+            interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
+            interval_logs[interval_start].append(log)
+
+        current_time = start_date
+
+        while current_time <= end_date:
+            next_time = current_time + time_delta
+            labels.append(current_time.isoformat())  # Using ISO format for timestamps
+
+            if current_time <= now:
+                cache_key = f'{campaign_id}_{destination_id}_{product_id}_{current_time}_{next_time}_{keyword}'
+                if current_time != now:
+                    interval_data = cache.get(cache_key)
+                else:
+                    interval_data = None
+
+                if interval_data is None:
+                    interval_data = defaultdict(list)
+
+                    for log in interval_logs[current_time]:
+                        advert_competitors = log.get('advert_competitors', [])
+                        cpms = log.get('cpms', [])
+
+                        # Ensure the lengths of advert_competitors and cpms match
+                        if len(advert_competitors) == len(cpms):
+                            for idx, (competitor_id, cpm) in enumerate(zip(advert_competitors, cpms)):
+                                label = f'{competitor_id}_{cpm}'
+                                interval_data[label].append(idx + 1)  # Position in the list (starting from 1)
+
+                    cache.set(cache_key, interval_data, timeout=60)  # Cache for 1 minute
+
+                for label, positions in interval_data.items():
+                    datasets[label]['label'] = label
+                    datasets[label]['data'].append(positions[0] if positions else None)
+            else:
+                for dataset in datasets.values():
+                    dataset['data'].append(None)
+
+            current_time = next_time
+
+        return {
+            'labels': labels,
+            'datasets': [list(datasets.values())]
+        }
+
     def get_product_positions_for_chart(self, product_id, destination_id, start_date, end_date, time_interval):
         now = timezone.now()
         campaign_id = self.id
@@ -135,7 +212,7 @@ class Campaign(models.Model):
                             interval_data[log['keyword']].append(log['position'])
 
                     for keyword, positions in interval_data.items():
-                        avg_position = sum(positions) / len(positions) if positions else None
+                        avg_position = sum(positions) / len(positions) if positions else []
                         interval_data[keyword] = avg_position
 
                     cache.set(cache_key, interval_data, timeout=60)  # Cache for
@@ -475,6 +552,12 @@ class AutoBidderSettings(models.Model):
 
     def __str__(self):
         return f"AutoBidderSettings for campaign {self.campaign}"
+
+    def get_monitoring_words(self):
+        keywords_monitoring = self.keywords_monitoring or []
+        keywords_monitoring_add = self.keywords_monitoring_add or []
+
+        return list(set(kw.strip() for kw in keywords_monitoring + keywords_monitoring_add if isinstance(kw, str) and kw.strip()))
 
     def save(self, *args, **kwargs):
         # Get the current instance before saving to compare

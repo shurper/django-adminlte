@@ -271,6 +271,7 @@ def autobidder_view(request, campaign_id):
 
     return render(request, 'wildberries/autobidder.html', context)
 
+@login_required()
 def monitoring_view(request, campaign_id):
     campaign = get_object_or_404(Campaign, pk=campaign_id)
     autobidder_settings, created = AutoBidderSettings.objects.get_or_create(campaign=campaign)
@@ -294,7 +295,32 @@ def monitoring_view(request, campaign_id):
 
     return render(request, 'wildberries/monitoring.html', context)
 
+@login_required()
+def keywords_monitoring_view(request, campaign_id):
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+    autobidder_settings, created = AutoBidderSettings.objects.get_or_create(campaign=campaign)
 
+    if not autobidder_settings.current_user_has_access(request):
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        if 'create_settings' in request.POST:
+            create_form = CreateMonitoringSettingsForm(request.POST, instance=autobidder_settings)
+            if create_form.is_valid():
+                create_form.save()
+
+    create_form = CreateMonitoringSettingsForm(instance=autobidder_settings)
+
+    context = {
+        'campaign': campaign,
+        'autobidder_settings': autobidder_settings,
+        'keywords': autobidder_settings.get_monitoring_words,
+        'create_form': create_form,
+    }
+
+    return render(request, 'wildberries/keywords_monitoring.html', context)
+
+@login_required()
 def monitoring_additional_words_view(request, campaign_id):
     campaign = get_object_or_404(Campaign, pk=campaign_id)
 
@@ -412,6 +438,58 @@ def api_get_chart_data(request):
             start_date=start_date,
             end_date=end_date,
             time_interval=time_interval
+        )
+
+        stat_data = campaign.get_stat_for_chart_by_product(
+            product_id=product_id,
+            start_date=start_date,
+            end_date=end_date,
+            time_interval=time_interval
+        )
+
+        combined_response_data = {
+            'labels': response_data['labels'],
+            'datasets': [
+                response_data['datasets'][0],
+                stat_data['datasets']
+            ]
+        }
+
+        return JsonResponse(combined_response_data)
+    return JsonResponse({}, status=400)
+
+@login_required()
+def api_get_chart_data_keywords(request):
+    if request.method == 'POST':
+        time_interval = request.POST.get('time_interval')
+        date_range = request.POST.get('date_range').split(' - ')
+        destination = request.POST.get('destination')
+        product_id = request.POST.get('product_id')
+        campaign_id = request.POST.get('campaign_id')
+        keyword = request.POST.get('keyword')
+
+        campaign = get_object_or_404(Campaign, pk=campaign_id)
+
+        if not campaign.current_user_has_access(request):
+            return HttpResponseForbidden()
+
+        date_format = '%d-%m-%Y %H:%M:%S'
+        start_date = timezone.make_aware(
+            datetime.strptime(date_range[0] + " 00:00:00", date_format),
+            timezone.get_current_timezone()
+        )
+        end_date = timezone.make_aware(
+            datetime.strptime(date_range[1] + " 23:59:59", date_format),
+            timezone.get_current_timezone()
+        )
+
+        response_data = campaign.get_cpms_for_chart(
+            product_id=product_id,
+            destination_id=destination,
+            start_date=start_date,
+            end_date=end_date,
+            time_interval=time_interval,
+            keyword=keyword
         )
 
         stat_data = campaign.get_stat_for_chart_by_product(

@@ -19,6 +19,14 @@
             </div>
             <div class="card-body">
                 <div class="row">
+                    <div class="form-group col-4">
+                        <label for="product_id">Ключевая фраза:</label>
+                        <select class="form-control select2bs4" id="keywords_list">
+                           {% for keyword in keywords %}
+                                <option value="{{keyword}}">{{keyword}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="form-group col-2">
                         <label>Период данных:</label>
                         <div class="input-group">
@@ -44,18 +52,19 @@
                         </select>
                     </div>
 
-                    <div class="form-group col-4">
+                    <div class="form-group col-2">
                         <label for="destination">Локация:</label>
                         <select class="form-control select2bs4" id="destination">
                             <!-- Options dynamically generated from the backend -->
                         </select>
                     </div>
-                    <div class="form-group col-4">
+                    <div class="form-group col-2">
                         <label for="product_id">Товар:</label>
                         <select class="form-control select2bs4" id="product_id">
                             <!-- Options dynamically generated from the backend -->
                         </select>
                     </div>
+
                 </div>
 
 
@@ -103,9 +112,8 @@
                         {% endfor %}
                     </div>
                     <div class="card-footer">
-                        <button type="submit" name="create_settings" class="btn btn-success">Сохранить</button>
+                        <button type="submit" name="create_settings" class="btn btn-primary">Сохранить</button>
                         <a class="btn btn-primary right" href="{% url 'monitoring_additional_words_view' campaign.id %}">Управление ключевыми фразами</a>
-                        <a class="btn btn-primary right" href="{% url 'keywords_monitoring_view' campaign.id %}">Мониторинг ключевых фраз</a>
                     </div>
                 </form>
             </div>
@@ -140,11 +148,6 @@
                     format: 'DD-MM-YYYY' // Specify the format used in the picker
                 }
             }).data('daterangepicker');
-
-
-
-
-
 
     // Fetch destinations and products dynamically
     fetchDestinations();
@@ -267,6 +270,7 @@ let debounceTimeout = null;
                 const destination = $('#destination').val();
                 const productId = $('#product_id').val();
                 const campaignId = '{{ campaign.id }}';
+                const keyword = $('#keywords_list').val();;
 
                 const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
                 const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
@@ -291,6 +295,7 @@ let debounceTimeout = null;
                                 destination: destination,
                                 product_id: productId,
                                 campaign_id: campaignId,
+                                keyword: keyword,
                                 csrfmiddlewaretoken: '{{ csrf_token }}'
                             },
                             success: function(data) {

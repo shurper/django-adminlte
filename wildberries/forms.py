@@ -136,9 +136,9 @@ class CreateMonitoringSettingsForm(forms.ModelForm):
         model = AutoBidderSettings
         fields = [
             'product_id',
-            'keyword',
-            'destination',
-            'max_bid',
+            #'keyword',
+            #'destination',
+           # 'max_bid',
             'is_enabled',
             'depth',
             'keywords_monitoring',
@@ -146,9 +146,9 @@ class CreateMonitoringSettingsForm(forms.ModelForm):
             'destinations_monitoring'
         ]
         widgets = {
-            'product_id': forms.NumberInput(attrs={'required': True}),
-            'keyword': forms.TextInput(attrs={'required': True}),
-            'max_bid': forms.NumberInput(attrs={'required': True, 'step': '0.01'}),
+            'product_id': forms.NumberInput(attrs={'required': True, 'readonly': 'readonly'}),
+            #'keyword': forms.TextInput(attrs={'required': True}),
+            #'max_bid': forms.NumberInput(attrs={'required': True, 'step': '0.01'}),
             'depth': forms.NumberInput(attrs={'required': True, 'step': '1'}),
             'destination': forms.Select(choices=[(0, 'Не выбрано'), (123585791, "Электросталь"), (-5650614, "Сочи")]),
             'is_enabled': forms.Select(choices=[(True, "Включен"), (False, "Выключен")]),
@@ -177,7 +177,6 @@ class CreateMonitoringSettingsForm(forms.ModelForm):
 
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
-
 
 
 class AddKeywordsMonitoringForm(forms.ModelForm):
