@@ -287,7 +287,7 @@ let debounceTimeout = null;
                     debounceTimeout = setTimeout(() => {
                         console.log("Load from server: " + dateRange);
                         $.ajax({
-                            url: '{% url "api_get_chart_data" %}',
+                            url: '{% url "api_get_chart_data_keywords" %}',
                             method: 'POST',
                             data: {
                                 time_interval: timeInterval,
