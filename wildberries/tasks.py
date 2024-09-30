@@ -175,6 +175,8 @@ def run_monitoring():
             continue
 
         combined_keywords = autobidder.get_monitoring_words()
+        print("combined_keywords")
+        print(combined_keywords)
         for keyword in combined_keywords:
             for destination in autobidder.destinations_monitoring:
                 # Try to retrieve an existing task in 'request' status
