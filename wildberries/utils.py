@@ -233,6 +233,7 @@ def save_campaign_statistics(store):
             )
 
             for platform in stat['days'][0]['apps']:
+                if platform['appType'] == 0: continue
                 platform_stat = PlatformStatistic.objects.create(
                     campaign_statistic=campaign_stat,
                     app_type=platform['appType'],

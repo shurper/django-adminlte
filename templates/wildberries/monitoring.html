@@ -129,108 +129,103 @@
 
 <script>
 // Initialize Select2 Elements
-    jQuery('.select2bs4').select2({
-                theme: 'bootstrap4'
+jQuery('.select2bs4').select2({
+    theme: 'bootstrap4'
+});
+const rangepicker = $('#date_range').daterangepicker({
+    //opens: 'right', // Change this based on your requirement
+    //autoUpdateInput: false,
+    locale: {
+        cancelLabel: 'Clear',
+        format: 'DD-MM-YYYY' // Specify the format used in the picker
+    }
+}).data('daterangepicker');
+
+
+// Fetch destinations and products dynamically
+fetchDestinations();
+fetchProducts();
+
+function fetchDestinations() {
+    // Fetch destinations from the server (replace with actual API endpoint)
+    $.ajax({
+        url: '{% url "api_get_destinations" %}',
+        method: 'GET',
+        success: function (data) {
+            let inp = $('#destination');
+            inp.empty();
+            $.each(data, function (index, value) {
+                inp.append($('<option>', {
+                    value: value.id,
+                    text: value.name
+                }));
+            });
+            setTimeout(() => {
+                loadCharts();
+            }, 1000);
+
+        }
     });
-    const rangepicker = $('#date_range').daterangepicker({
-                //opens: 'right', // Change this based on your requirement
-                //autoUpdateInput: false,
-                locale: {
-                    cancelLabel: 'Clear',
-                    format: 'DD-MM-YYYY' // Specify the format used in the picker
-                }
-            }).data('daterangepicker');
+}
 
-
-
-
-
-
-    // Fetch destinations and products dynamically
-    fetchDestinations();
-    fetchProducts();
-
-    function fetchDestinations() {
-        // Fetch destinations from the server (replace with actual API endpoint)
-        $.ajax({
-            url: '{% url "api_get_destinations" %}',
-            method: 'GET',
-            success: function(data) {
-                let inp = $('#destination');
-                inp.empty();
-                $.each(data, function(index, value) {
-                    inp.append($('<option>', {
-                        value: value.id,
-                        text: value.name
-                    }));
-                });
-                setTimeout(()=>{
-                   loadCharts();
-                },1000);
-
-            }
-        });
-    }
-
-    function fetchProducts() {
-        // Fetch products from the server (replace with actual API endpoint)
-        $.ajax({
-            url: '{% url "api_get_products" %}',
-            method: 'GET',
-            data: {"campaign_id": "{{ campaign.id }}"},
-            success: function(data) {
-                let inp = $('#product_id');
-                inp.empty();
-                $.each(data, function(index, value) {
-                    inp.append($('<option>', {
-                        value: value.id,
-                        text: value.name
-                    }));
-                });
-                setTimeout(()=>{
-                    loadCharts();
-                },1000);
-            }
-        });
-    }
-
-
-
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-    }
-
-    function setCookie(name, value, days) {
-        let expires = '';
-        if (days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = `; expires=${date.toUTCString()}`;
+function fetchProducts() {
+    // Fetch products from the server (replace with actual API endpoint)
+    $.ajax({
+        url: '{% url "api_get_products" %}',
+        method: 'GET',
+        data: {"campaign_id": "{{ campaign.id }}"},
+        success: function (data) {
+            let inp = $('#product_id');
+            inp.empty();
+            $.each(data, function (index, value) {
+                inp.append($('<option>', {
+                    value: value.id,
+                    text: value.name
+                }));
+            });
+            setTimeout(() => {
+                loadCharts();
+            }, 1000);
         }
-        document.cookie = `${name}=${value || ''}${expires}; path=/`;
+    });
+}
+
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function setCookie(name, value, days) {
+    let expires = '';
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = `; expires=${date.toUTCString()}`;
+    }
+    document.cookie = `${name}=${value || ''}${expires}; path=/`;
+}
+
+function getRandomColor(target) {
+    // Check if the color for the target is already stored in cookies
+    let color = getCookie(target);
+    if (color) {
+        return color;  // Return the stored color if it exists
     }
 
-    function getRandomColor(target) {
-        // Check if the color for the target is already stored in cookies
-        let color = getCookie(target);
-        if (color) {
-            return color;  // Return the stored color if it exists
-        }
-
-        // Generate a new color if not found in cookies
-        const letters = '0123456789ABCDEF';
-        color = '#';
-        for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-        }
-
-        // Store the new color in cookies with a 30-day expiration
-        setCookie(target, color, 30);
-
-        return color;
+    // Generate a new color if not found in cookies
+    const letters = '0123456789ABCDEF';
+    color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
     }
+
+    // Store the new color in cookies with a 30-day expiration
+    setCookie(target, color, 30);
+
+    return color;
+}
 
 function saveLegendVisibility(chart) {
     const legendState = {};
@@ -255,325 +250,326 @@ function restoreLegendVisibility(chart) {
 }
 
 // Function to update the chart
-    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
-    let statChart; // Глобальная переменная для хранения экземпляра графика
+let autobidderChart; // Глобальная переменная для хранения экземпляра графика
+let statChart; // Глобальная переменная для хранения экземпляра графика
 let panTimeout = null;
 
 const dataCache = {};
 let debounceTimeout = null;
- function updateChart() {
-                const timeInterval = $('#time_interval').val();
-                const dateRange = $('#date_range').val();
-                const destination = $('#destination').val();
-                const productId = $('#product_id').val();
-                const campaignId = '{{ campaign.id }}';
 
-                const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
-                const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
-                const today = moment().startOf('day');
-                if (autobidderChart) {
-                    saveLegendVisibility(autobidderChart);
-                }
+function updateChart() {
+    const timeInterval = $('#time_interval').val();
+    const dateRange = $('#date_range').val();
+    const destination = $('#destination').val();
+    const productId = $('#product_id').val();
+    const campaignId = '{{ campaign.id }}';
 
-                if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
-                    console.log("Load from cache: " + dateRange);
-                    renderChart(dataCache[cacheKey]);
-                } else {
-                    clearTimeout(debounceTimeout);
-                    debounceTimeout = setTimeout(() => {
-                        console.log("Load from server: " + dateRange);
-                        $.ajax({
-                            url: '{% url "api_get_chart_data" %}',
-                            method: 'POST',
-                            data: {
-                                time_interval: timeInterval,
-                                date_range: dateRange,
-                                destination: destination,
-                                product_id: productId,
-                                campaign_id: campaignId,
-                                csrfmiddlewaretoken: '{{ csrf_token }}'
-                            },
-                            success: function(data) {
-                                if (!data || !data.labels || !data.datasets) {
-                                    console.error('Invalid data received from the server');
-                                    return;
-                                }
-
-                                dataCache[cacheKey] = data;
-                                renderChart(data);
-                            },
-                            error: function(xhr, status, error) {
-                                console.error('AJAX error:', status, error);
-                            }
-                        });
-                    }, 500);
-                }
-            }
-
-            function renderChart(data) {
-                const ctx = document.getElementById('autobidderChart').getContext('2d');
-
-                let currentMin = null;
-                let currentMax = null;
-                if (autobidderChart && autobidderChart.options.scales.x) {
-                    currentMin = autobidderChart.options.scales.x.min;
-                    currentMax = autobidderChart.options.scales.x.max;
-                }
-
-                if (autobidderChart) {
-                    autobidderChart.destroy();
-                }
-
-                if (!data || !data.labels || !data.datasets) {
-                    console.error('Invalid data received from the server');
-                    return;
-                }
-
-                const allDatasets = [];
-data.datasets.forEach((datasetGroup, groupIndex) => {
-    if (!Array.isArray(datasetGroup)) {
-        console.error('Invalid dataset group received from the server');
-        return;
+    const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
+    const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
+    const today = moment().startOf('day');
+    if (autobidderChart) {
+        saveLegendVisibility(autobidderChart);
     }
-    datasetGroup.forEach(dataset => {
-        if (!dataset || !dataset.label || !dataset.data) {
-            console.error('Invalid dataset received from the server');
-            return;
-        }
-        const color = getRandomColor(dataset.label);
-        dataset.borderColor = color;
-        dataset.backgroundColor = color;
-        dataset.fill = false; // Не заполнять область под линией
-        dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
-        allDatasets.push(dataset);
-    });
-});
 
-const dayAnnotations = [];
-let currentDay = moment(data.labels[0]).startOf('day');
-let nextDay = currentDay.clone().add(1, 'day');
-let isGrey = true; // Начнем с серой полосы
+    if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
+        console.log("Load from cache: " + dateRange);
+        renderChart(dataCache[cacheKey]);
+    } else {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            console.log("Load from server: " + dateRange);
+            $.ajax({
+                url: '{% url "api_get_chart_data" %}',
+                method: 'POST',
+                data: {
+                    time_interval: timeInterval,
+                    date_range: dateRange,
+                    destination: destination,
+                    product_id: productId,
+                    campaign_id: campaignId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (data) {
+                    if (!data || !data.labels || !data.datasets) {
+                        console.error('Invalid data received from the server');
+                        return;
+                    }
 
-while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
-    dayAnnotations.push({
-        type: 'box',
-        xMin: currentDay.toISOString(),
-        xMax: nextDay.toISOString(),
-        backgroundColor: isGrey ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
-        borderWidth: 0
-    });
-
-    currentDay = nextDay.clone();
-    nextDay = currentDay.clone().add(1, 'day');
-    isGrey = !isGrey; // Чередуем цвет полосы
+                    dataCache[cacheKey] = data;
+                    renderChart(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX error:', status, error);
+                }
+            });
+        }, 500);
+    }
 }
 
-                const annotation = {
-                    type: 'line',
-                    borderColor: 'grey',
-                    borderWidth: 1,
-                    display: true,
-                    label: {
+function renderChart(data) {
+    const ctx = document.getElementById('autobidderChart').getContext('2d');
+
+    let currentMin = null;
+    let currentMax = null;
+    if (autobidderChart && autobidderChart.options.scales.x) {
+        currentMin = autobidderChart.options.scales.x.min;
+        currentMax = autobidderChart.options.scales.x.max;
+    }
+
+    if (autobidderChart) {
+        autobidderChart.destroy();
+    }
+
+    if (!data || !data.labels || !data.datasets) {
+        console.error('Invalid data received from the server');
+        return;
+    }
+
+    const allDatasets = [];
+    data.datasets.forEach((datasetGroup, groupIndex) => {
+        if (!Array.isArray(datasetGroup)) {
+            console.error('Invalid dataset group received from the server');
+            return;
+        }
+        datasetGroup.forEach(dataset => {
+            if (!dataset || !dataset.label || !dataset.data) {
+                console.error('Invalid dataset received from the server');
+                return;
+            }
+            const color = getRandomColor(dataset.label);
+            dataset.borderColor = color;
+            dataset.backgroundColor = color;
+            dataset.fill = false; // Не заполнять область под линией
+            dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+            allDatasets.push(dataset);
+        });
+    });
+
+    const dayAnnotations = [];
+    let currentDay = moment(data.labels[0]).startOf('day');
+    let nextDay = currentDay.clone().add(1, 'day');
+    let isGrey = true; // Начнем с серой полосы
+
+    while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
+        dayAnnotations.push({
+            type: 'box',
+            xMin: currentDay.toISOString(),
+            xMax: nextDay.toISOString(),
+            backgroundColor: isGrey ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
+            borderWidth: 0
+        });
+
+        currentDay = nextDay.clone();
+        nextDay = currentDay.clone().add(1, 'day');
+        isGrey = !isGrey; // Чередуем цвет полосы
+    }
+
+    const annotation = {
+        type: 'line',
+        borderColor: 'grey',
+        borderWidth: 1,
+        display: true,
+        label: {
+            display: true,
+            content: moment().format('HH:mm'),
+            position: 'start'
+        },
+        scaleID: 'x',
+        value: moment().format('YYYY-MM-DDTHH:mm:ssZ')
+    };
+
+
+    const labels = data.labels;
+
+    autobidderChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: allDatasets
+        },
+        options: {
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    title: {
                         display: true,
-                        content: moment().format('HH:mm'),
-                        position: 'start'
+                        text: 'Время'
                     },
-                    scaleID: 'x',
-                    value: moment().format('YYYY-MM-DDTHH:mm:ssZ')
-                };
-
-
-                const labels = data.labels;
-
-                autobidderChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: allDatasets
+                    min: currentMin,
+                    max: currentMax,
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'HH:mm',
+                            day: 'D MMM`YY'
+                        }
                     },
-                    options: {
-                        maintainAspectRatio: false,
-                        animation: false,
-                        scales: {
-                            x: {
-                            type: 'time',
-                            title: {
-                                display: true,
-                                text: 'Время'
-                            },
-                            min: currentMin,
-                            max: currentMax,
-                            time: {
-                                unit: 'hour',
-                                displayFormats: {
-                                    hour: 'HH:mm',
-                                    day: 'D MMM`YY'
-                                }
-                            },
-                            ticks: {
-                                major: {
-                                    enabled: true, // Включить крупные деления
-                                    displayFormats: {
-                                        day: 'D MMM`YY' // Формат даты для крупных делений
-                                    }
-                                },
-                                source: 'auto',
-                                autoSkip: true,
-                                maxRotation: 0,
-                                maxTicksLimit: 24
+                    ticks: {
+                        major: {
+                            enabled: true, // Включить крупные деления
+                            displayFormats: {
+                                day: 'D MMM`YY' // Формат даты для крупных делений
                             }
                         },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Позиция товара'
-                                },
-                                offset: true,
-                                stack: 'stack_1',
-                                stackWeight: 2,
-                            },
-                            y1: {
-                                title: {
-                                    display: true,
-                                    text: 'Статистика'
-                                },
-                                offset: true,
-                                stack: 'stack_1',
-                                stackWeight: 1,
-                                grid: {
-                                    drawOnChartArea: true
-                                },
-                            }
+                        source: 'auto',
+                        autoSkip: true,
+                        maxRotation: 0,
+                        maxTicksLimit: 24
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Позиция товара'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 2,
+                },
+                y1: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
+                }
+            },
+            plugins: {
+                annotation: {
+                    annotations: [...dayAnnotations, annotation]
+                },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    align: 'center',
+                    labels: {
+                        boxWidth: 15,
+                        boxHeight: 15,
+                        font: {
+                            size: 12,
+                            family: 'Arial',
+                            style: 'normal',
+                            weight: 'normal'
                         },
-                        plugins: {
-                            annotation: {
-                                annotations: [...dayAnnotations, annotation]
-                            },
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                align: 'center',
-                                labels: {
-                                    boxWidth: 15,
-                                    boxHeight: 15,
-                                    font: {
-                                        size: 12,
-                                        family: 'Arial',
-                                        style: 'normal',
-                                        weight: 'normal'
-                                    },
-                                    color: '#333',
-                                    padding: 10,
-                                    usePointStyle: true,
-                                    pointStyle: 'circle'
-                                }
-                            },
-                            crosshair: {
-                                line: {
-                                    color: 'black',  // Цвет перекрестия
-                                    width: 1         // Толщина линии перекрестия
-                                },
-                                sync: {
-                                    enabled: false,            // Синхронизация между графиками
-                                    group: 1,                  // Группа синхронизации
-                                    suppressTooltips: false    // Подавление тултипов
-                                },
-                                zoom: {
-                                    enabled: false,                                      // Включение увеличения
-                                    zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',      // Цвет области увеличения
-                                    zoomboxBorderColor: '#48F',                          // Цвет границы области увеличения
-                                    zoomButtonText: 'Reset Zoom',                        // Текст кнопки сброса увеличения
-                                    zoomButtonClass: 'reset-zoom-button'                 // Класс кнопки сброса увеличения
-                                },
-                                callbacks: {
-                                    beforeZoom: function(start, end) {                  // Колбэк перед увеличением
-                                        return true;
-                                    },
-                                    afterZoom: function(start, end) {                   // Колбэк после увеличения
-                                        return true;
-                                    }
-                                }
-                            },
-                            zoom: {
-                                pan: {
-                                    enabled: true,
-                                    mode: 'x',
-                                    onPanComplete: function({chart}) {
-                                        if (panTimeout) {
-                                            clearTimeout(panTimeout);
-                                        }
-                                        panTimeout = setTimeout(() => {
-                                            const newMin = chart.scales.x.min;
-                                            const newMax = chart.scales.x.max;
-
-                                            const newStartDate = moment(newMin).format('DD-MM-YYYY');
-                                            const newEndDate = moment(newMax).format('DD-MM-YYYY');
-
-                                            rangepicker.setStartDate(newStartDate);
-                                            rangepicker.setEndDate(newEndDate);
-
-                                            updateChart();
-                                        }, 500);
-                                    }
-                                },
-                                zoom: {
-                                    wheel: {
-                                        enabled: true,
-                                    },
-                                    drag: {
-                                        enabled: false,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                    },
-                                    pinch: {
-                                        enabled: true
-                                    },
-                                    mode: 'x',
-                                    speed: 0.1,
-                                    onZoomComplete: function({chart}) {
-                                        if (panTimeout) {
-                                            clearTimeout(panTimeout);
-                                        }
-                                        panTimeout = setTimeout(() => {
-                                            const newMin = chart.scales.x.min;
-                                            const newMax = chart.scales.x.max;
-
-                                            const newStartDate = moment(newMin).format('DD-MM-YYYY');
-                                            const newEndDate = moment(newMax).format('DD-MM-YYYY');
-
-                                            rangepicker.setStartDate(newStartDate);
-                                            rangepicker.setEndDate(newEndDate);
-
-                                            updateChart();
-                                        }, 500);
-                                    }
-                                }
-                            }
+                        color: '#333',
+                        padding: 10,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                crosshair: {
+                    line: {
+                        color: 'black',  // Цвет перекрестия
+                        width: 1         // Толщина линии перекрестия
+                    },
+                    sync: {
+                        enabled: false,            // Синхронизация между графиками
+                        group: 1,                  // Группа синхронизации
+                        suppressTooltips: false    // Подавление тултипов
+                    },
+                    zoom: {
+                        enabled: false,                                      // Включение увеличения
+                        zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',      // Цвет области увеличения
+                        zoomboxBorderColor: '#48F',                          // Цвет границы области увеличения
+                        zoomButtonText: 'Reset Zoom',                        // Текст кнопки сброса увеличения
+                        zoomButtonClass: 'reset-zoom-button'                 // Класс кнопки сброса увеличения
+                    },
+                    callbacks: {
+                        beforeZoom: function (start, end) {                  // Колбэк перед увеличением
+                            return true;
+                        },
+                        afterZoom: function (start, end) {                   // Колбэк после увеличения
+                            return true;
                         }
                     }
-                });
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        onPanComplete: function ({chart}) {
+                            if (panTimeout) {
+                                clearTimeout(panTimeout);
+                            }
+                            panTimeout = setTimeout(() => {
+                                const newMin = chart.scales.x.min;
+                                const newMax = chart.scales.x.max;
 
-                restoreLegendVisibility(autobidderChart);
+                                const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                const newEndDate = moment(newMax).format('DD-MM-YYYY');
+
+                                rangepicker.setStartDate(newStartDate);
+                                rangepicker.setEndDate(newEndDate);
+
+                                updateChart();
+                            }, 500);
+                        }
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                        },
+                        drag: {
+                            enabled: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                        speed: 0.1,
+                        onZoomComplete: function ({chart}) {
+                            if (panTimeout) {
+                                clearTimeout(panTimeout);
+                            }
+                            panTimeout = setTimeout(() => {
+                                const newMin = chart.scales.x.min;
+                                const newMax = chart.scales.x.max;
+
+                                const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                const newEndDate = moment(newMax).format('DD-MM-YYYY');
+
+                                rangepicker.setStartDate(newStartDate);
+                                rangepicker.setEndDate(newEndDate);
+
+                                updateChart();
+                            }, 500);
+                        }
+                    }
+                }
             }
-
-
-
-    function loadCharts(){
-        updateChart();
-    }
-    $('#ab_monitor').find('select, input').on('change', function(){
-        loadCharts();
-    });
-    let chartUpdaterInProgress = false;
-    setInterval(()=>{
-        if ($('#auto_update_switch').is(':checked')) {
-            if(chartUpdaterInProgress) return true;
-            chartUpdaterInProgress = true;
-            loadCharts();
-            chartUpdaterInProgress = false;
         }
-    },10000);
+    });
 
-    let autoUpdateTimer = null;
+    restoreLegendVisibility(autobidderChart);
+}
+
+
+function loadCharts() {
+    updateChart();
+}
+
+$('#ab_monitor').find('select, input').on('change', function () {
+    loadCharts();
+});
+let chartUpdaterInProgress = false;
+setInterval(() => {
+    if ($('#auto_update_switch').is(':checked')) {
+        if (chartUpdaterInProgress) return true;
+        chartUpdaterInProgress = true;
+        loadCharts();
+        chartUpdaterInProgress = false;
+    }
+}, 10000);
+
+let autoUpdateTimer = null;
 let inactivityTimer = null;
 
 // Функция для сброса таймера бездействия
@@ -590,11 +586,11 @@ function resetInactivityTimer() {
 }
 
 // Инициализация обработчиков для сброса таймера при активности
-$(document).on('mousemove keydown', function() {
+$(document).on('mousemove keydown', function () {
     resetInactivityTimer();
 });
 
-$('#auto_update_switch').on('change', function() {
+$('#auto_update_switch').on('change', function () {
     if ($(this).is(':checked')) {
         // При включении чекбокса, начинаем отслеживать бездействие
         resetInactivityTimer();
@@ -613,6 +609,7 @@ $('#auto_update_switch').on('change', function() {
         clearTimeout(inactivityTimer);
     }
 });
+
 
 </script>
 {% endblock %}
