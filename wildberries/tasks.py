@@ -120,6 +120,7 @@ def run_autobidder():
             print(f"Autobidder task cpms {task.watcher_data.get('cpms', [])}")
             update_bid(autobidder, new_bid)
             from .models import AutoBidderLog
+            product_price = task.watcher_data.get('price_data') and task.watcher_data['price_data'].get('total', None)
             AutoBidderLog.objects.create(
                 campaign=autobidder.campaign,
                 message=f"Position: {task.actual_position}, New Bid: {new_bid}",
@@ -130,7 +131,7 @@ def run_autobidder():
                 depth=task.depth,
                 keyword=task.keyword,
                 position_delta=task.watcher_data.get('position_delta'),
-                product_price=task.watcher_data.get('price_data', {}).get('total', None),
+                product_price=product_price,
                 average_cpm=task.watcher_data.get('average_cpm'),
                 cpm=task.watcher_data.get('advert_cpm'),
                 before_average_cpm=task.watcher_data.get('before_average_cpm'),
@@ -206,6 +207,8 @@ def run_monitoring():
 
                 if task.actual_position is not None:
                     from .models import AutoBidderLog
+                    product_price = task.watcher_data.get('price_data') and task.watcher_data['price_data'].get('total',
+                                                                                                                None)
                     AutoBidderLog.objects.create(
                         campaign=autobidder.campaign,
                         message=f"Position: {task.actual_position}",
@@ -216,7 +219,7 @@ def run_monitoring():
                         depth=task.depth,
                         keyword=task.keyword,
                         position_delta=task.watcher_data.get('position_delta'),
-                        product_price=task.watcher_data.get('price_data', {}).get('total', None),
+                        product_price=product_price,
                         average_cpm=task.watcher_data.get('average_cpm'),
                         cpm=task.watcher_data.get('advert_cpm'),
                         before_average_cpm=task.watcher_data.get('before_average_cpm'),
