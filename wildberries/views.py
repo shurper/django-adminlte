@@ -451,6 +451,10 @@ def api_get_chart_data(request):
             'labels': response_data['labels'],
             'datasets': [
                 response_data['datasets'][0],
+                response_data['datasets'][1],
+                response_data['datasets'][2],
+                response_data['datasets'][3],
+                response_data['datasets'][4],
                 stat_data['datasets']
             ]
         }

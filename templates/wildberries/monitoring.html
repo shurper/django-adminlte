@@ -340,7 +340,8 @@ function renderChart(data) {
             dataset.borderColor = color;
             dataset.backgroundColor = color;
             dataset.fill = false; // Не заполнять область под линией
-            dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+            //dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
+            dataset.yAxisID = 'y' + groupIndex; // Привязываем к нужной оси Y
             allDatasets.push(dataset);
         });
     });
@@ -419,7 +420,7 @@ function renderChart(data) {
                         maxTicksLimit: 24
                     }
                 },
-                y: {
+                y0: {
                     title: {
                         display: true,
                         text: 'Позиция товара'
@@ -439,7 +440,68 @@ function renderChart(data) {
                     grid: {
                         drawOnChartArea: true
                     },
+                },
+                y2: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
+                },
+                y3: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
+                },
+                y4: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
+                },
+                y5: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
+                },
+                y6: {
+                    title: {
+                        display: true,
+                        text: 'Статистика'
+                    },
+                    offset: true,
+                    stack: 'stack_1',
+                    stackWeight: 1,
+                    grid: {
+                        drawOnChartArea: true
+                    },
                 }
+
             },
             plugins: {
                 annotation: {

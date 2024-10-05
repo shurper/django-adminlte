@@ -156,9 +156,85 @@ class Campaign(models.Model):
             'datasets': [list(datasets.values())]
         }
 
+    # def get_product_positions_for_chart(self, product_id, destination_id, start_date, end_date, time_interval):
+    #     now = timezone.now()
+    #     campaign_id = self.id
+    #     # Group logs by the chosen time interval and calculate average position
+    #     time_deltas = {
+    #         '5m': timedelta(minutes=5),
+    #         '15m': timedelta(minutes=15),
+    #         '1h': timedelta(hours=1),
+    #         '4h': timedelta(hours=4),
+    #         '1d': timedelta(days=1),
+    #         '1w': timedelta(weeks=1),
+    #         '1M': timedelta(days=30),
+    #     }
+    #     time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+    #
+    #     labels = []
+    #     datasets = defaultdict(lambda: {'label': '', 'data': []})
+    #
+    #     # Extract all logs at once and process in memory
+    #     logs = AutoBidderLog.objects.filter(
+    #         timestamp__range=(start_date, end_date),
+    #         destination=destination_id,
+    #         product_id=product_id,
+    #         campaign_id=campaign_id
+    #     ).values('timestamp', 'keyword', 'position')
+    #
+    #     # Prepare a dict to store logs by intervals
+    #     interval_logs = defaultdict(list)
+    #
+    #     for log in logs:
+    #         interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
+    #         interval_logs[interval_start].append(log)
+    #
+    #     keywords = set(log['keyword'] for log in logs)
+    #     current_time = start_date
+    #
+    #     while current_time <= end_date:
+    #         next_time = current_time + time_delta
+    #         labels.append(current_time.isoformat())  # Изменение формата временных меток
+    #
+    #         if current_time <= now:
+    #             cache_key = f'{campaign_id}_{destination_id}_{product_id}_{current_time}_{next_time}'
+    #             if current_time != now:
+    #                 interval_data = cache.get(cache_key)
+    #             else:
+    #                 interval_data = None
+    #
+    #             if interval_data is None:
+    #                 interval_data = defaultdict(list)
+    #
+    #                 for log in interval_logs[current_time]:
+    #                     if log['position'] <= 200:
+    #                         interval_data[log['keyword']].append(log['position'])
+    #
+    #                 for keyword, positions in interval_data.items():
+    #                     avg_position = sum(positions) / len(positions) if positions else []
+    #                     interval_data[keyword] = avg_position
+    #
+    #                 cache.set(cache_key, interval_data, timeout=60)  # Cache for
+    #
+    #             for keyword in keywords:
+    #                 avg_position = interval_data.get(keyword, None)
+    #                 datasets[keyword]['label'] = keyword
+    #                 datasets[keyword]['data'].append(avg_position)
+    #         else:
+    #             for keyword in keywords:
+    #                 datasets[keyword]['data'].append(None)
+    #
+    #         current_time = next_time
+    #
+    #     return {
+    #         'labels': labels,
+    #         'datasets': [list(datasets.values())]
+    #     }
+
     def get_product_positions_for_chart(self, product_id, destination_id, start_date, end_date, time_interval):
         now = timezone.now()
         campaign_id = self.id
+
         # Group logs by the chosen time interval and calculate average position
         time_deltas = {
             '5m': timedelta(minutes=5),
@@ -173,6 +249,10 @@ class Campaign(models.Model):
 
         labels = []
         datasets = defaultdict(lambda: {'label': '', 'data': []})
+        datasets_advert_position = defaultdict(lambda: {'label': 'Advert Position', 'data': []})
+        datasets_advert_competitors_count = defaultdict(lambda: {'label': 'Advert Competitors Count', 'data': []})
+        datasets_product_price = defaultdict(lambda: {'label': 'Product Price', 'data': []})
+        datasets_cpm = defaultdict(lambda: {'label': 'CPM', 'data': []})
 
         # Extract all logs at once and process in memory
         logs = AutoBidderLog.objects.filter(
@@ -180,7 +260,8 @@ class Campaign(models.Model):
             destination=destination_id,
             product_id=product_id,
             campaign_id=campaign_id
-        ).values('timestamp', 'keyword', 'position')
+        ).values('timestamp', 'keyword', 'position', 'advert_position', 'advert_competitors_count', 'product_price',
+                 'cpm', 'advert_competitors')
 
         # Prepare a dict to store logs by intervals
         interval_logs = defaultdict(list)
@@ -194,8 +275,7 @@ class Campaign(models.Model):
 
         while current_time <= end_date:
             next_time = current_time + time_delta
-            # labels.append(current_time.strftime('%d-%m-%Y %H:%M:%S'))
-            labels.append(current_time.isoformat())  # Изменение формата временных меток
+            labels.append(current_time.isoformat())
 
             if current_time <= now:
                 cache_key = f'{campaign_id}_{destination_id}_{product_id}_{current_time}_{next_time}'
@@ -209,27 +289,62 @@ class Campaign(models.Model):
 
                     for log in interval_logs[current_time]:
                         if log['position'] <= 200:
+                            # Основная позиция товара
                             interval_data[log['keyword']].append(log['position'])
 
+                            # Позиция относительно конкурентов
+                            datasets_advert_position[log['keyword']]['data'].append(log.get('advert_position'))
+
+                            # Количество конкурентов
+                            datasets_advert_competitors_count[log['keyword']]['data'].append(
+                                log.get('advert_competitors_count'))
+
+                            # Стоимость товара
+                            datasets_product_price[log['keyword']]['data'].append(log.get('product_price'))
+
+                            # CPM, с учетом возможного отсутствия в log['cpm']
+                            if log.get('cpm') is not None:
+                                datasets_cpm[log['keyword']]['data'].append(log['cpm'])
+                            else:
+                                # Найти индекс товара в advert_competitors
+                                competitors = log.get('advert_competitors', [])
+                                if product_id in competitors:
+                                    product_index = competitors.index(product_id)
+                                    datasets_cpm[log['keyword']]['data'].append(
+                                        log['advert_competitors'][product_index].get('cpm'))
+                                else:
+                                    datasets_cpm[log['keyword']]['data'].append(None)
+
                     for keyword, positions in interval_data.items():
-                        avg_position = sum(positions) / len(positions) if positions else []
+                        avg_position = sum(positions) / len(positions) if positions else None
                         interval_data[keyword] = avg_position
 
-                    cache.set(cache_key, interval_data, timeout=60)  # Cache for
+                    cache.set(cache_key, interval_data, timeout=60)  # Кэширование данных
 
                 for keyword in keywords:
                     avg_position = interval_data.get(keyword, None)
                     datasets[keyword]['label'] = keyword
                     datasets[keyword]['data'].append(avg_position)
             else:
+                # Если текущее время больше, чем now, добавляем пустые значения
                 for keyword in keywords:
                     datasets[keyword]['data'].append(None)
+                    datasets_advert_position[keyword]['data'].append(None)
+                    datasets_advert_competitors_count[keyword]['data'].append(None)
+                    datasets_product_price[keyword]['data'].append(None)
+                    datasets_cpm[keyword]['data'].append(None)
 
             current_time = next_time
 
         return {
             'labels': labels,
-            'datasets': [list(datasets.values())]
+            'datasets': [
+                list(datasets.values()),
+                list(datasets_advert_position.values()),
+                list(datasets_advert_competitors_count.values()),
+                list(datasets_product_price.values()),
+                list(datasets_cpm.values())
+            ]
         }
 
     def get_stat_for_chart_by_product(self, product_id, start_date, end_date, time_interval):
