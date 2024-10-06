@@ -302,18 +302,23 @@ class Campaign(models.Model):
                             # Стоимость товара
                             datasets_product_price[log['keyword']]['data'].append(log.get('product_price'))
 
-                            # CPM, с учетом возможного отсутствия в log['cpm']
-                            if log.get('cpm') is not None:
-                                datasets_cpm[log['keyword']]['data'].append(log['cpm'])
-                            else:
-                                # Найти индекс товара в advert_competitors
-                                competitors = log.get('advert_competitors', [])
-                                if product_id in competitors:
-                                    product_index = competitors.index(product_id)
-                                    datasets_cpm[log['keyword']]['data'].append(
-                                        log['advert_competitors'][product_index].get('cpm'))
+                        # CPM, с учетом возможного отсутствия в log['cpm']
+                        if log.get('cpm') is not None:
+                            datasets_cpm[log['keyword']]['data'].append(log['cpm'])
+                        else:
+                            # Найти индекс товара в advert_competitors (если это список)
+                            competitors = log.get('advert_competitors', [])
+                            if isinstance(competitors, list) and product_id in competitors:
+                                product_index = competitors.index(product_id)
+                                # Проверка, является ли элемент списка словарем
+                                competitor_data = competitors[product_index]
+                                if isinstance(competitor_data, dict):
+                                    cpm_value = competitor_data.get('cpm')
+                                    datasets_cpm[log['keyword']]['data'].append(cpm_value if cpm_value is not None else None)
                                 else:
                                     datasets_cpm[log['keyword']]['data'].append(None)
+                            else:
+                                datasets_cpm[log['keyword']]['data'].append(None)
 
                     for keyword, positions in interval_data.items():
                         avg_position = sum(positions) / len(positions) if positions else None
