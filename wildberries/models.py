@@ -394,6 +394,15 @@ class Campaign(models.Model):
         keywords = set(log['keyword'] for log in logs)
         current_time = start_date
 
+        def default_interval_data():
+            return {
+                'positions': [],
+                'advert_positions': [],
+                'competitors_counts': [],
+                'prices': [],
+                'cpms': []
+            }
+
         while current_time <= end_date:
             next_time = current_time + time_delta
             labels.append(current_time.isoformat())  # Изменение формата временных меток
@@ -406,9 +415,7 @@ class Campaign(models.Model):
                     interval_data = None
 
                 if interval_data is None:
-                    interval_data = defaultdict(
-                        lambda: {'positions': [], 'advert_positions': [], 'competitors_counts': [], 'prices': [],
-                                 'cpms': []})
+                    interval_data = defaultdict(default_interval_data)
 
                     for log in interval_logs[current_time]:
                         if log['position'] <= 200:
