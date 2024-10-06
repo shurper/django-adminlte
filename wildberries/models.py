@@ -394,15 +394,6 @@ class Campaign(models.Model):
         keywords = set(log['keyword'] for log in logs)
         current_time = start_date
 
-        def default_interval_data():
-            return {
-                'positions': [],
-                'advert_positions': [],
-                'competitors_counts': [],
-                'prices': [],
-                'cpms': []
-            }
-
         while current_time <= end_date:
             next_time = current_time + time_delta
             labels.append(current_time.isoformat())  # Изменение формата временных меток
@@ -415,7 +406,22 @@ class Campaign(models.Model):
                     interval_data = None
 
                 if interval_data is None:
-                    interval_data = defaultdict(default_interval_data)
+                    # Создаем словарь без использования defaultdict
+                    interval_data = {}
+
+                    for keyword in keywords:
+                        interval_data[keyword] = {
+                            'positions': [],
+                            'advert_positions': [],
+                            'competitors_counts': [],
+                            'prices': [],
+                            'cpms': [],
+                            'avg_position': None,
+                            'avg_advert_position': None,
+                            'avg_competitors_count': None,
+                            'avg_price': None,
+                            'avg_cpm': None,
+                        }
 
                     for log in interval_logs[current_time]:
                         if log['position'] <= 200:
@@ -437,7 +443,8 @@ class Campaign(models.Model):
 
                     # Подсчет средних значений
                     for keyword, data in interval_data.items():
-                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data['positions'] else None
+                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data[
+                            'positions'] else None
 
                     cache.set(cache_key, interval_data, timeout=60)  # Cache for 60 seconds
 
@@ -446,16 +453,6 @@ class Campaign(models.Model):
                     if keyword in interval_data:
                         datasets[keyword]['label'] = keyword
                         datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
-                        datasets_advert_position[keyword]['label'] = keyword
-                        datasets_advert_position[keyword]['data'].append(
-                            interval_data[keyword].get('avg_advert_position'))
-                        datasets_advert_competitors_count[keyword]['label'] = keyword
-                        datasets_advert_competitors_count[keyword]['data'].append(
-                            interval_data[keyword].get('avg_competitors_count'))
-                        datasets_product_price[keyword]['label'] = keyword
-                        datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
-                        datasets_cpm[keyword]['label'] = keyword
-                        datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
                     else:
                         datasets[keyword]['data'].append(None)
                         datasets_advert_position[keyword]['data'].append(None)
