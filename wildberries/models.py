@@ -231,6 +231,127 @@ class Campaign(models.Model):
     #         'datasets': [list(datasets.values())]
     #     }
 
+    # def get_product_positions_for_chart(self, product_id, destination_id, start_date, end_date, time_interval):
+    #     now = timezone.now()
+    #     campaign_id = self.id
+    #
+    #     # Group logs by the chosen time interval and calculate average position
+    #     time_deltas = {
+    #         '5m': timedelta(minutes=5),
+    #         '15m': timedelta(minutes=15),
+    #         '1h': timedelta(hours=1),
+    #         '4h': timedelta(hours=4),
+    #         '1d': timedelta(days=1),
+    #         '1w': timedelta(weeks=1),
+    #         '1M': timedelta(days=30),
+    #     }
+    #     time_delta = time_deltas.get(time_interval, timedelta(hours=1))
+    #
+    #     labels = []
+    #     datasets = defaultdict(lambda: {'label': '', 'data': []})
+    #     datasets_advert_position = defaultdict(lambda: {'label': 'Advert Position', 'data': []})
+    #     datasets_advert_competitors_count = defaultdict(lambda: {'label': 'Advert Competitors Count', 'data': []})
+    #     datasets_product_price = defaultdict(lambda: {'label': 'Product Price', 'data': []})
+    #     datasets_cpm = defaultdict(lambda: {'label': 'CPM', 'data': []})
+    #
+    #     # Extract all logs at once and process in memory
+    #     logs = AutoBidderLog.objects.filter(
+    #         timestamp__range=(start_date, end_date),
+    #         destination=destination_id,
+    #         product_id=product_id,
+    #         campaign_id=campaign_id
+    #     ).values('timestamp', 'keyword', 'position', 'advert_position', 'advert_competitors_count', 'product_price',
+    #              'cpm', 'advert_competitors')
+    #
+    #     # Prepare a dict to store logs by intervals
+    #     interval_logs = defaultdict(list)
+    #
+    #     for log in logs:
+    #         interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
+    #         interval_logs[interval_start].append(log)
+    #
+    #     keywords = set(log['keyword'] for log in logs)
+    #     current_time = start_date
+    #
+    #     while current_time <= end_date:
+    #         next_time = current_time + time_delta
+    #         labels.append(current_time.isoformat())
+    #
+    #         if current_time <= now:
+    #             cache_key = f'{campaign_id}_{destination_id}_{product_id}_{current_time}_{next_time}'
+    #             if current_time != now:
+    #                 interval_data = cache.get(cache_key)
+    #             else:
+    #                 interval_data = None
+    #
+    #             if interval_data is None:
+    #                 interval_data = defaultdict(list)
+    #
+    #                 for log in interval_logs[current_time]:
+    #                     if log['position'] <= 200:
+    #                         # Основная позиция товара
+    #                         interval_data[log['keyword']].append(log['position'])
+    #
+    #                         # Позиция относительно конкурентов
+    #                         datasets_advert_position[log['keyword']]['data'].append(log.get('advert_position'))
+    #
+    #                         # Количество конкурентов
+    #                         datasets_advert_competitors_count[log['keyword']]['data'].append(
+    #                             log.get('advert_competitors_count'))
+    #
+    #                         # Стоимость товара
+    #                         datasets_product_price[log['keyword']]['data'].append(log.get('product_price'))
+    #
+    #                     # CPM, с учетом возможного отсутствия в log['cpm']
+    #                     if log.get('cpm') is not None:
+    #                         datasets_cpm[log['keyword']]['data'].append(log['cpm'])
+    #                     else:
+    #                         # Найти индекс товара в advert_competitors (если это список)
+    #                         competitors = log.get('advert_competitors', [])
+    #                         if isinstance(competitors, list) and product_id in competitors:
+    #                             product_index = competitors.index(product_id)
+    #                             # Проверка, является ли элемент списка словарем
+    #                             competitor_data = competitors[product_index]
+    #                             if isinstance(competitor_data, dict):
+    #                                 cpm_value = competitor_data.get('cpm')
+    #                                 datasets_cpm[log['keyword']]['data'].append(cpm_value if cpm_value is not None else None)
+    #                             else:
+    #                                 datasets_cpm[log['keyword']]['data'].append(None)
+    #                         else:
+    #                             datasets_cpm[log['keyword']]['data'].append(None)
+    #
+    #                 for keyword, positions in interval_data.items():
+    #                     avg_position = sum(positions) / len(positions) if positions else None
+    #                     interval_data[keyword] = avg_position
+    #
+    #                 cache.set(cache_key, interval_data, timeout=60)  # Кэширование данных
+    #
+    #             for keyword in keywords:
+    #                 avg_position = interval_data.get(keyword, None)
+    #                 datasets[keyword]['label'] = keyword
+    #                 datasets[keyword]['data'].append(avg_position)
+    #         else:
+    #             # Если текущее время больше, чем now, добавляем пустые значения
+    #             for keyword in keywords:
+    #                 datasets[keyword]['data'].append(None)
+    #                 datasets_advert_position[keyword]['data'].append(None)
+    #                 datasets_advert_competitors_count[keyword]['data'].append(None)
+    #                 datasets_product_price[keyword]['data'].append(None)
+    #                 datasets_cpm[keyword]['data'].append(None)
+    #
+    #         current_time = next_time
+    #
+    #     return {
+    #         'labels': labels,
+    #         'datasets': [
+    #             list(datasets.values()),
+    #             list(datasets_advert_position.values()),
+    #             list(datasets_advert_competitors_count.values()),
+    #             list(datasets_product_price.values()),
+    #             list(datasets_cpm.values())
+    #         ]
+    #     }
+
     def get_product_positions_for_chart(self, product_id, destination_id, start_date, end_date, time_interval):
         now = timezone.now()
         campaign_id = self.id
@@ -249,10 +370,10 @@ class Campaign(models.Model):
 
         labels = []
         datasets = defaultdict(lambda: {'label': '', 'data': []})
-        datasets_advert_position = defaultdict(lambda: {'label': 'Advert Position', 'data': []})
-        datasets_advert_competitors_count = defaultdict(lambda: {'label': 'Advert Competitors Count', 'data': []})
-        datasets_product_price = defaultdict(lambda: {'label': 'Product Price', 'data': []})
-        datasets_cpm = defaultdict(lambda: {'label': 'CPM', 'data': []})
+        datasets_advert_position = defaultdict(lambda: {'label': '', 'data': []})
+        datasets_advert_competitors_count = defaultdict(lambda: {'label': '', 'data': []})
+        datasets_product_price = defaultdict(lambda: {'label': '', 'data': []})
+        datasets_cpm = defaultdict(lambda: {'label': '', 'data': []})
 
         # Extract all logs at once and process in memory
         logs = AutoBidderLog.objects.filter(
@@ -275,7 +396,7 @@ class Campaign(models.Model):
 
         while current_time <= end_date:
             next_time = current_time + time_delta
-            labels.append(current_time.isoformat())
+            labels.append(current_time.isoformat())  # Изменение формата временных меток
 
             if current_time <= now:
                 cache_key = f'{campaign_id}_{destination_id}_{product_id}_{current_time}_{next_time}'
@@ -285,53 +406,62 @@ class Campaign(models.Model):
                     interval_data = None
 
                 if interval_data is None:
-                    interval_data = defaultdict(list)
+                    interval_data = defaultdict(lambda: defaultdict(list))
 
                     for log in interval_logs[current_time]:
                         if log['position'] <= 200:
-                            # Основная позиция товара
-                            interval_data[log['keyword']].append(log['position'])
+                            interval_data[log['keyword']]['position'].append(log['position'])
 
-                            # Позиция относительно конкурентов
-                            datasets_advert_position[log['keyword']]['data'].append(log.get('advert_position'))
+                        if log.get('advert_position') is not None:
+                            interval_data[log['keyword']]['advert_position'].append(log['advert_position'])
 
-                            # Количество конкурентов
-                            datasets_advert_competitors_count[log['keyword']]['data'].append(
-                                log.get('advert_competitors_count'))
+                        if log.get('advert_competitors_count') is not None:
+                            interval_data[log['keyword']]['advert_competitors_count'].append(
+                                log['advert_competitors_count'])
 
-                            # Стоимость товара
-                            datasets_product_price[log['keyword']]['data'].append(log.get('product_price'))
+                        if log.get('product_price') is not None:
+                            interval_data[log['keyword']]['product_price'].append(log['product_price'])
 
-                        # CPM, с учетом возможного отсутствия в log['cpm']
                         if log.get('cpm') is not None:
-                            datasets_cpm[log['keyword']]['data'].append(log['cpm'])
-                        else:
-                            # Найти индекс товара в advert_competitors (если это список)
-                            competitors = log.get('advert_competitors', [])
-                            if isinstance(competitors, list) and product_id in competitors:
-                                product_index = competitors.index(product_id)
-                                # Проверка, является ли элемент списка словарем
-                                competitor_data = competitors[product_index]
-                                if isinstance(competitor_data, dict):
-                                    cpm_value = competitor_data.get('cpm')
-                                    datasets_cpm[log['keyword']]['data'].append(cpm_value if cpm_value is not None else None)
-                                else:
-                                    datasets_cpm[log['keyword']]['data'].append(None)
-                            else:
-                                datasets_cpm[log['keyword']]['data'].append(None)
+                            interval_data[log['keyword']]['cpm'].append(log['cpm'])
+                        elif log.get('advert_competitors') and product_id in log['advert_competitors']:
+                            product_index = log['advert_competitors'].index(product_id)
+                            interval_data[log['keyword']]['cpm'].append(
+                                log['advert_competitors'][product_index].get('cpm'))
 
-                    for keyword, positions in interval_data.items():
-                        avg_position = sum(positions) / len(positions) if positions else None
-                        interval_data[keyword] = avg_position
+                    for keyword, data in interval_data.items():
+                        avg_position = sum(data['position']) / len(data['position']) if data['position'] else None
+                        avg_advert_position = sum(data['advert_position']) / len(data['advert_position']) if data[
+                            'advert_position'] else None
+                        avg_competitors_count = sum(data['advert_competitors_count']) / len(
+                            data['advert_competitors_count']) if data['advert_competitors_count'] else None
+                        avg_product_price = sum(data['product_price']) / len(data['product_price']) if data[
+                            'product_price'] else None
+                        avg_cpm = sum(data['cpm']) / len(data['cpm']) if data['cpm'] else None
 
-                    cache.set(cache_key, interval_data, timeout=60)  # Кэширование данных
+                        interval_data[keyword] = {
+                            'avg_position': avg_position,
+                            'avg_advert_position': avg_advert_position,
+                            'avg_competitors_count': avg_competitors_count,
+                            'avg_product_price': avg_product_price,
+                            'avg_cpm': avg_cpm,
+                        }
+
+                    cache.set(cache_key, interval_data, timeout=60)  # Cache for 60 seconds
 
                 for keyword in keywords:
-                    avg_position = interval_data.get(keyword, None)
                     datasets[keyword]['label'] = keyword
-                    datasets[keyword]['data'].append(avg_position)
+                    datasets[keyword]['data'].append(interval_data[keyword]['avg_position'])
+                    datasets_advert_position[keyword]['label'] = keyword
+                    datasets_advert_position[keyword]['data'].append(interval_data[keyword]['avg_advert_position'])
+                    datasets_advert_competitors_count[keyword]['label'] = keyword
+                    datasets_advert_competitors_count[keyword]['data'].append(
+                        interval_data[keyword]['avg_competitors_count'])
+                    datasets_product_price[keyword]['label'] = keyword
+                    datasets_product_price[keyword]['data'].append(interval_data[keyword]['avg_product_price'])
+                    datasets_cpm[keyword]['label'] = keyword
+                    datasets_cpm[keyword]['data'].append(interval_data[keyword]['avg_cpm'])
             else:
-                # Если текущее время больше, чем now, добавляем пустые значения
                 for keyword in keywords:
                     datasets[keyword]['data'].append(None)
                     datasets_advert_position[keyword]['data'].append(None)
