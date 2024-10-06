@@ -406,28 +406,37 @@ class Campaign(models.Model):
                     interval_data = None
 
                 if interval_data is None:
-                    interval_data = defaultdict(lambda: defaultdict(list))
+                    # Используем обычные словари для интервала данных, чтобы избежать проблемы с сериализацией
+                    interval_data = {}
 
                     for log in interval_logs[current_time]:
+                        keyword = log['keyword']
+                        if keyword not in interval_data:
+                            interval_data[keyword] = {
+                                'position': [],
+                                'advert_position': [],
+                                'advert_competitors_count': [],
+                                'product_price': [],
+                                'cpm': []
+                            }
+
                         if log['position'] <= 200:
-                            interval_data[log['keyword']]['position'].append(log['position'])
+                            interval_data[keyword]['position'].append(log['position'])
 
                         if log.get('advert_position') is not None:
-                            interval_data[log['keyword']]['advert_position'].append(log['advert_position'])
+                            interval_data[keyword]['advert_position'].append(log['advert_position'])
 
                         if log.get('advert_competitors_count') is not None:
-                            interval_data[log['keyword']]['advert_competitors_count'].append(
-                                log['advert_competitors_count'])
+                            interval_data[keyword]['advert_competitors_count'].append(log['advert_competitors_count'])
 
                         if log.get('product_price') is not None:
-                            interval_data[log['keyword']]['product_price'].append(log['product_price'])
+                            interval_data[keyword]['product_price'].append(log['product_price'])
 
                         if log.get('cpm') is not None:
-                            interval_data[log['keyword']]['cpm'].append(log['cpm'])
+                            interval_data[keyword]['cpm'].append(log['cpm'])
                         elif log.get('advert_competitors') and product_id in log['advert_competitors']:
                             product_index = log['advert_competitors'].index(product_id)
-                            interval_data[log['keyword']]['cpm'].append(
-                                log['advert_competitors'][product_index].get('cpm'))
+                            interval_data[keyword]['cpm'].append(log['advert_competitors'][product_index].get('cpm'))
 
                     for keyword, data in interval_data.items():
                         avg_position = sum(data['position']) / len(data['position']) if data['position'] else None
@@ -447,7 +456,8 @@ class Campaign(models.Model):
                             'avg_cpm': avg_cpm,
                         }
 
-                    cache.set(cache_key, interval_data, timeout=60)  # Cache for 60 seconds
+                    # Сохранение в кэш (теперь interval_data не содержит лямбд)
+                    cache.set(cache_key, interval_data, timeout=60)
 
                 for keyword in keywords:
                     datasets[keyword]['label'] = keyword
