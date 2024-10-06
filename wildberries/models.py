@@ -430,14 +430,7 @@ class Campaign(models.Model):
 
                     # Подсчет средних значений
                     for keyword, data in interval_data.items():
-                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data[
-                            'positions'] else None
-                        data['avg_advert_position'] = sum(data['advert_positions']) / len(data['advert_positions']) if \
-                        data['advert_positions'] else None
-                        data['avg_competitors_count'] = sum(data['competitors_counts']) / len(
-                            data['competitors_counts']) if data['competitors_counts'] else None
-                        data['avg_price'] = sum(data['prices']) / len(data['prices']) if data['prices'] else None
-                        data['avg_cpm'] = sum(data['cpms']) / len(data['cpms']) if data['cpms'] else None
+                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data['positions'] else None
 
                     cache.set(cache_key, interval_data, timeout=60)  # Cache for 60 seconds
 
