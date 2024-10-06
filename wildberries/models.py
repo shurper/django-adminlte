@@ -406,72 +406,65 @@ class Campaign(models.Model):
                     interval_data = None
 
                 if interval_data is None:
-                    # Используем обычные словари для интервала данных, чтобы избежать проблемы с сериализацией
-                    interval_data = {}
+                    interval_data = defaultdict(
+                        lambda: {'positions': [], 'advert_positions': [], 'competitors_counts': [], 'prices': [],
+                                 'cpms': []})
 
                     for log in interval_logs[current_time]:
-                        keyword = log['keyword']
-                        if keyword not in interval_data:
-                            interval_data[keyword] = {
-                                'position': [],
-                                'advert_position': [],
-                                'advert_competitors_count': [],
-                                'product_price': [],
-                                'cpm': []
-                            }
-
                         if log['position'] <= 200:
-                            interval_data[keyword]['position'].append(log['position'])
-
-                        if log.get('advert_position') is not None:
-                            interval_data[keyword]['advert_position'].append(log['advert_position'])
-
-                        if log.get('advert_competitors_count') is not None:
-                            interval_data[keyword]['advert_competitors_count'].append(log['advert_competitors_count'])
-
-                        if log.get('product_price') is not None:
-                            interval_data[keyword]['product_price'].append(log['product_price'])
-
+                            interval_data[log['keyword']]['positions'].append(log['position'])
+                        if 'advert_position' in log:
+                            interval_data[log['keyword']]['advert_positions'].append(log['advert_position'])
+                        if 'advert_competitors_count' in log:
+                            interval_data[log['keyword']]['competitors_counts'].append(log['advert_competitors_count'])
+                        if 'product_price' in log:
+                            interval_data[log['keyword']]['prices'].append(log['product_price'])
                         if log.get('cpm') is not None:
-                            interval_data[keyword]['cpm'].append(log['cpm'])
-                        elif log.get('advert_competitors') and product_id in log['advert_competitors']:
-                            product_index = log['advert_competitors'].index(product_id)
-                            interval_data[keyword]['cpm'].append(log['advert_competitors'][product_index].get('cpm'))
+                            interval_data[log['keyword']]['cpms'].append(log['cpm'])
+                        elif 'advert_competitors' in log:
+                            try:
+                                idx = log['advert_competitors'].index(product_id)
+                                interval_data[log['keyword']]['cpms'].append(log['advert_competitors'][idx]['cpm'])
+                            except (ValueError, IndexError, KeyError):
+                                pass
 
+                    # Подсчет средних значений
                     for keyword, data in interval_data.items():
-                        avg_position = sum(data['position']) / len(data['position']) if data['position'] else None
-                        avg_advert_position = sum(data['advert_position']) / len(data['advert_position']) if data[
-                            'advert_position'] else None
-                        avg_competitors_count = sum(data['advert_competitors_count']) / len(
-                            data['advert_competitors_count']) if data['advert_competitors_count'] else None
-                        avg_product_price = sum(data['product_price']) / len(data['product_price']) if data[
-                            'product_price'] else None
-                        avg_cpm = sum(data['cpm']) / len(data['cpm']) if data['cpm'] else None
+                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data[
+                            'positions'] else None
+                        data['avg_advert_position'] = sum(data['advert_positions']) / len(data['advert_positions']) if \
+                        data['advert_positions'] else None
+                        data['avg_competitors_count'] = sum(data['competitors_counts']) / len(
+                            data['competitors_counts']) if data['competitors_counts'] else None
+                        data['avg_price'] = sum(data['prices']) / len(data['prices']) if data['prices'] else None
+                        data['avg_cpm'] = sum(data['cpms']) / len(data['cpms']) if data['cpms'] else None
 
-                        interval_data[keyword] = {
-                            'avg_position': avg_position,
-                            'avg_advert_position': avg_advert_position,
-                            'avg_competitors_count': avg_competitors_count,
-                            'avg_product_price': avg_product_price,
-                            'avg_cpm': avg_cpm,
-                        }
+                    cache.set(cache_key, interval_data, timeout=60)  # Cache for 60 seconds
 
-                    # Сохранение в кэш (теперь interval_data не содержит лямбд)
-                    cache.set(cache_key, interval_data, timeout=60)
-
+                # Добавляем данные в основной датасет
                 for keyword in keywords:
-                    datasets[keyword]['label'] = keyword
-                    datasets[keyword]['data'].append(interval_data[keyword]['avg_position'])
-                    datasets_advert_position[keyword]['label'] = keyword
-                    datasets_advert_position[keyword]['data'].append(interval_data[keyword]['avg_advert_position'])
-                    datasets_advert_competitors_count[keyword]['label'] = keyword
-                    datasets_advert_competitors_count[keyword]['data'].append(
-                        interval_data[keyword]['avg_competitors_count'])
-                    datasets_product_price[keyword]['label'] = keyword
-                    datasets_product_price[keyword]['data'].append(interval_data[keyword]['avg_product_price'])
-                    datasets_cpm[keyword]['label'] = keyword
-                    datasets_cpm[keyword]['data'].append(interval_data[keyword]['avg_cpm'])
+                    if keyword in interval_data:
+                        datasets[keyword]['label'] = keyword
+                        datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
+                        datasets_advert_position[keyword]['label'] = keyword
+                        datasets_advert_position[keyword]['data'].append(
+                            interval_data[keyword].get('avg_advert_position'))
+                        datasets_advert_competitors_count[keyword]['label'] = keyword
+                        datasets_advert_competitors_count[keyword]['data'].append(
+                            interval_data[keyword].get('avg_competitors_count'))
+                        datasets_product_price[keyword]['label'] = keyword
+                        datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
+                        datasets_cpm[keyword]['label'] = keyword
+                        datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
+                    else:
+                        datasets[keyword]['data'].append(None)
+                        datasets_advert_position[keyword]['data'].append(None)
+                        datasets_advert_competitors_count[keyword]['data'].append(None)
+                        datasets_product_price[keyword]['data'].append(None)
+                        datasets_cpm[keyword]['data'].append(None)
+
             else:
+                # Для временных интервалов в будущем добавляем None
                 for keyword in keywords:
                     datasets[keyword]['data'].append(None)
                     datasets_advert_position[keyword]['data'].append(None)
