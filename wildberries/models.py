@@ -356,7 +356,7 @@ class Campaign(models.Model):
         now = timezone.now()
         campaign_id = self.id
 
-        # Интервалы времени для группировки логов
+        # Определение временных интервалов
         time_deltas = {
             '5m': timedelta(minutes=5),
             '15m': timedelta(minutes=15),
@@ -375,7 +375,7 @@ class Campaign(models.Model):
         datasets_product_price = defaultdict(lambda: {'label': '', 'data': []})
         datasets_cpm = defaultdict(lambda: {'label': '', 'data': []})
 
-        # Извлекаем логи
+        # Получение всех логов за указанный период
         logs = AutoBidderLog.objects.filter(
             timestamp__range=(start_date, end_date),
             destination=destination_id,
@@ -384,7 +384,7 @@ class Campaign(models.Model):
         ).values('timestamp', 'keyword', 'position', 'advert_position', 'advert_competitors_count', 'product_price',
                  'cpm', 'advert_competitors')
 
-        # Подготовка логов по временным интервалам
+        # Подготовка логов, сгруппированных по интервалам
         interval_logs = defaultdict(list)
         for log in logs:
             interval_start = (log['timestamp'] - start_date) // time_delta * time_delta + start_date
@@ -402,50 +402,57 @@ class Campaign(models.Model):
                 interval_data = cache.get(cache_key) if current_time != now else None
 
                 if interval_data is None:
-                    # Создаем словарь для хранения данных по ключевым словам
-                    interval_data = {}
-
-                    for keyword in keywords:
-                        interval_data[keyword] = {
-                            'positions': [],
-                            'advert_positions': [],
-                            'competitors_counts': [],
-                            'prices': [],
-                            'cpms': []
-                        }
+                    interval_data = {keyword: {'positions': [], 'advert_positions': [], 'competitors_counts': [],
+                                               'prices': [], 'cpms': []} for keyword in keywords}
 
                     for log in interval_logs[current_time]:
-                        interval_data[log['keyword']]['positions'].append(log['position'])
-                        interval_data[log['keyword']]['advert_positions'].append(log['advert_position'])
-                        interval_data[log['keyword']]['competitors_counts'].append(log['advert_competitors_count'])
-                        interval_data[log['keyword']]['prices'].append(log['product_price'])
-                        interval_data[log['keyword']]['cpms'].append(log['cpm'])
+                        keyword = log['keyword']
+                        if log['position'] <= 200:
+                            interval_data[keyword]['positions'].append(log['position'])
+                        if 'advert_position' in log:
+                            interval_data[keyword]['advert_positions'].append(log['advert_position'])
+                        if 'advert_competitors_count' in log:
+                            interval_data[keyword]['competitors_counts'].append(log['advert_competitors_count'])
+                        if 'product_price' in log:
+                            interval_data[keyword]['prices'].append(log['product_price'])
+                        if log.get('cpm') is not None:
+                            interval_data[keyword]['cpms'].append(log['cpm'])
+                        elif 'advert_competitors' in log:
+                            try:
+                                idx = log['advert_competitors'].index(product_id)
+                                interval_data[keyword]['cpms'].append(log['advert_competitors'][idx]['cpm'])
+                            except (ValueError, IndexError, KeyError):
+                                pass
 
-                    cache.set(cache_key, interval_data, timeout=60)  # Кэширование данных на 60 секунд
+                    # Подсчет средних значений для каждого параметра
+                    for keyword, data in interval_data.items():
+                        data['avg_position'] = sum(data['positions']) / len(data['positions']) if data[
+                            'positions'] else None
+                        data['avg_advert_position'] = sum(data['advert_positions']) / len(data['advert_positions']) if \
+                        data['advert_positions'] else None
+                        data['avg_competitors_count'] = sum(data['competitors_counts']) / len(
+                            data['competitors_counts']) if data['competitors_counts'] else None
+                        data['avg_price'] = sum(data['prices']) / len(data['prices']) if data['prices'] else None
+                        data['avg_cpm'] = sum(data['cpms']) / len(data['cpms']) if data['cpms'] else None
 
-                # Добавляем данные для каждого ключевого слова
+                    cache.set(cache_key, interval_data, timeout=60)
+
+                # Добавление данных в датасеты
                 for keyword in keywords:
-                    if keyword in interval_data:
-                        datasets[keyword]['label'] = keyword
-                        datasets[keyword]['data'].append(interval_data[keyword]['positions'])
-                        datasets_advert_position[keyword]['label'] = keyword
-                        datasets_advert_position[keyword]['data'].append(interval_data[keyword]['advert_positions'])
-                        datasets_advert_competitors_count[keyword]['label'] = keyword
-                        datasets_advert_competitors_count[keyword]['data'].append(
-                            interval_data[keyword]['competitors_counts'])
-                        datasets_product_price[keyword]['label'] = keyword
-                        datasets_product_price[keyword]['data'].append(interval_data[keyword]['prices'])
-                        datasets_cpm[keyword]['label'] = keyword
-                        datasets_cpm[keyword]['data'].append(interval_data[keyword]['cpms'])
-                    else:
-                        datasets[keyword]['data'].append(None)
-                        datasets_advert_position[keyword]['data'].append(None)
-                        datasets_advert_competitors_count[keyword]['data'].append(None)
-                        datasets_product_price[keyword]['data'].append(None)
-                        datasets_cpm[keyword]['data'].append(None)
+                    datasets[keyword]['label'] = keyword
+                    datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
+                    datasets_advert_position[keyword]['label'] = keyword
+                    datasets_advert_position[keyword]['data'].append(interval_data[keyword].get('avg_advert_position'))
+                    datasets_advert_competitors_count[keyword]['label'] = keyword
+                    datasets_advert_competitors_count[keyword]['data'].append(
+                        interval_data[keyword].get('avg_competitors_count'))
+                    datasets_product_price[keyword]['label'] = keyword
+                    datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
+                    datasets_cpm[keyword]['label'] = keyword
+                    datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
 
             else:
-                # Для будущих временных интервалов добавляем None
+                # Добавление None для будущих интервалов
                 for keyword in keywords:
                     datasets[keyword]['data'].append(None)
                     datasets_advert_position[keyword]['data'].append(None)
