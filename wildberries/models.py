@@ -435,31 +435,32 @@ class Campaign(models.Model):
 
                         # Если список пустой, оставляем None
                         if total_positions > 0:
-                            data['avg_position'] = sum(
-                                pos if pos is not None else 0 for pos in data['positions']) / total_positions
+                            data['avg_position'] = sum(pos if pos is not None else 0 for pos in data['positions']) / total_positions
+                            data['avg_position'] = data['avg_position'] if data['avg_position'] is not 0 else None
                         else:
                             data['avg_position'] = None
 
                         if total_advert_positions > 0:
-                            data['avg_advert_position'] = sum(pos if pos is not None else 0 for pos in
-                                                              data['advert_positions']) / total_advert_positions
+                            data['avg_advert_position'] = sum(pos if pos is not None else 0 for pos in data['advert_positions']) / total_advert_positions
+                            data['avg_advert_position'] = data['avg_advert_position'] if data['avg_advert_position'] is not 0 else None
                         else:
                             data['avg_advert_position'] = None
 
                         if total_competitors_counts > 0:
-                            data['avg_competitors_count'] = sum(count if count is not None else 0 for count in
-                                                                data['competitors_counts']) / total_competitors_counts
+                            data['avg_competitors_count'] = sum(count if count is not None else 0 for count in data['competitors_counts']) / total_competitors_counts
+                            data['avg_competitors_count'] = data['avg_competitors_count'] if data['avg_competitors_count'] is not 0 else None
                         else:
                             data['avg_competitors_count'] = None
 
                         if total_prices > 0:
-                            data['avg_price'] = sum(
-                                price if price is not None else 0 for price in data['prices']) / total_prices
+                            data['avg_price'] = sum(price if price is not None else 0 for price in data['prices']) / total_prices
+                            data['avg_price'] = data['avg_price'] if data['avg_price'] is not 0 else None
                         else:
                             data['avg_price'] = None
 
                         if total_cpms > 0:
                             data['avg_cpm'] = sum(cpm if cpm is not None else 0 for cpm in data['cpms']) / total_cpms
+                            data['avg_cpm'] = data['avg_cpm'] if data['avg_cpm'] is not 0 else None
                         else:
                             data['avg_cpm'] = None
 
