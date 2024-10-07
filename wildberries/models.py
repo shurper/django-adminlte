@@ -468,30 +468,17 @@ class Campaign(models.Model):
 
                 # Добавление данных в датасеты
                 for keyword in keywords:
-                    datasets.setdefault(keyword, {'label': '', 'data': []})
-                    datasets_advert_position.setdefault(keyword, {'label': '', 'data': []})
-                    datasets_advert_competitors_count.setdefault(keyword, {'label': '', 'data': []})
-                    datasets_product_price.setdefault(keyword, {'label': '', 'data': []})
-                    datasets_cpm.setdefault(keyword, {'label': '', 'data': []})
-
-                    interval_keyword_data = interval_data.get(keyword, {})
-
                     datasets[keyword]['label'] = keyword
-                    datasets[keyword]['data'].append(interval_keyword_data.get('avg_position'))
-
+                    datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
                     datasets_advert_position[keyword]['label'] = keyword
-                    datasets_advert_position[keyword]['data'].append(interval_keyword_data.get('avg_advert_position'))
-
+                    datasets_advert_position[keyword]['data'].append(interval_data[keyword].get('avg_advert_position'))
                     datasets_advert_competitors_count[keyword]['label'] = keyword
                     datasets_advert_competitors_count[keyword]['data'].append(
-                        interval_keyword_data.get('avg_competitors_count'))
-
+                        interval_data[keyword].get('avg_competitors_count'))
                     datasets_product_price[keyword]['label'] = keyword
-                    datasets_product_price[keyword]['data'].append(interval_keyword_data.get('avg_price'))
-
+                    datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
                     datasets_cpm[keyword]['label'] = keyword
-                    datasets_cpm[keyword]['data'].append(interval_keyword_data.get('avg_cpm'))
-
+                    datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
 
             else:
                 # Добавление None для будущих интервалов
