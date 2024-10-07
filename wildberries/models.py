@@ -448,17 +448,17 @@ class Campaign(models.Model):
                 for keyword in keywords:
                     if keyword in interval_data:
                         datasets[keyword]['label'] = keyword
-                        datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
+                        datasets[keyword]['data'].append(interval_data[keyword].get('positions'))
                         datasets_advert_position[keyword]['label'] = keyword
                         datasets_advert_position[keyword]['data'].append(
-                            interval_data[keyword].get('avg_advert_position'))
+                            interval_data[keyword].get('advert_positions'))
                         datasets_advert_competitors_count[keyword]['label'] = keyword
                         datasets_advert_competitors_count[keyword]['data'].append(
-                            interval_data[keyword].get('avg_competitors_count'))
+                            interval_data[keyword].get('competitors_counts'))
                         datasets_product_price[keyword]['label'] = keyword
-                        datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
+                        datasets_product_price[keyword]['data'].append(interval_data[keyword].get('prices'))
                         datasets_cpm[keyword]['label'] = keyword
-                        datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
+                        datasets_cpm[keyword]['data'].append(interval_data[keyword].get('cpms'))
                     else:
                         datasets[keyword]['data'].append(None)
                         datasets_advert_position[keyword]['data'].append(None)
