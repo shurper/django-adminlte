@@ -416,11 +416,7 @@ class Campaign(models.Model):
                             'competitors_counts': [],
                             'prices': [],
                             'cpms': [],
-                            'avg_position': None,
-                            'avg_advert_position': None,
-                            'avg_competitors_count': None,
-                            'avg_price': None,
-                            'avg_cpm': None,
+                            'avg_position': None
                         }
 
                     for log in interval_logs[current_time]:
@@ -453,12 +449,23 @@ class Campaign(models.Model):
                     if keyword in interval_data:
                         datasets[keyword]['label'] = keyword
                         datasets[keyword]['data'].append(interval_data[keyword].get('avg_position'))
+                        datasets_advert_position[keyword]['label'] = keyword
+                        datasets_advert_position[keyword]['data'].append(
+                            interval_data[keyword].get('avg_advert_position'))
+                        datasets_advert_competitors_count[keyword]['label'] = keyword
+                        datasets_advert_competitors_count[keyword]['data'].append(
+                            interval_data[keyword].get('avg_competitors_count'))
+                        datasets_product_price[keyword]['label'] = keyword
+                        datasets_product_price[keyword]['data'].append(interval_data[keyword].get('avg_price'))
+                        datasets_cpm[keyword]['label'] = keyword
+                        datasets_cpm[keyword]['data'].append(interval_data[keyword].get('avg_cpm'))
                     else:
                         datasets[keyword]['data'].append(None)
                         datasets_advert_position[keyword]['data'].append(None)
                         datasets_advert_competitors_count[keyword]['data'].append(None)
                         datasets_product_price[keyword]['data'].append(None)
                         datasets_cpm[keyword]['data'].append(None)
+
 
             else:
                 # Для временных интервалов в будущем добавляем None
