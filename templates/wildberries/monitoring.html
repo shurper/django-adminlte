@@ -64,7 +64,7 @@
                 <div class="form-group">
                     <div style=" overflow-x: auto;">
                     <!-- Chart.js canvas -->
-                    <canvas id="autobidderChart" height="800"></canvas>
+                    <canvas id="autobidderChart" height="1000"></canvas>
                     </div>
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input spinner" id="auto_update_switch">
@@ -340,7 +340,6 @@ function renderChart(data) {
             dataset.borderColor = color;
             dataset.backgroundColor = color;
             dataset.fill = false; // Не заполнять область под линией
-            //dataset.yAxisID = groupIndex === 0 ? 'y' : 'y1'; // Привязываем к нужной оси Y
             dataset.yAxisID = 'y' + groupIndex; // Привязываем к нужной оси Y
             allDatasets.push(dataset);
         });
@@ -444,7 +443,7 @@ function renderChart(data) {
                 y2: {
                     title: {
                         display: true,
-                        text: 'Конкуренция на странице'
+                        text: 'Конкуренция'
                     },
                     offset: true,
                     stack: 'stack_1',
@@ -456,7 +455,7 @@ function renderChart(data) {
                 y3: {
                     title: {
                         display: true,
-                        text: 'Цена продукта'
+                        text: 'Цена'
                     },
                     offset: true,
                     stack: 'stack_1',
@@ -468,7 +467,7 @@ function renderChart(data) {
                 y4: {
                     title: {
                         display: true,
-                        text: 'Рекламная ставка'
+                        text: 'Ставка'
                     },
                     offset: true,
                     stack: 'stack_1',
@@ -619,11 +618,15 @@ setInterval(() => {
     }
 }, 10000);
 
+let autoSwitcherEnabled = false; // установить в true для автовыключения переключателя
 let autoUpdateTimer = null;
 let inactivityTimer = null;
 
 // Функция для сброса таймера бездействия
 function resetInactivityTimer() {
+    if(!autoSwitcherEnabled){
+        return;
+    }
     if (inactivityTimer) {
         clearTimeout(inactivityTimer);
     }
@@ -642,6 +645,9 @@ $(document).on('mousemove keydown', function () {
 
 $('#auto_update_switch').on('change', function () {
     if ($(this).is(':checked')) {
+        if(!autoSwitcherEnabled){
+            return;
+        }
         // При включении чекбокса, начинаем отслеживать бездействие
         resetInactivityTimer();
 
@@ -652,7 +658,7 @@ $('#auto_update_switch').on('change', function () {
         // Выключаем автообновление через 10 минут (независимо от активности)
         autoUpdateTimer = setTimeout(() => {
             $('#auto_update_switch').prop('checked', false);
-        }, 10 * 60 * 1000);
+        }, 10 * 60000);
     } else {
         // Останавливаем все таймеры при выключении чекбокса
         clearTimeout(autoUpdateTimer);

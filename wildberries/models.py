@@ -454,7 +454,7 @@ class Campaign(models.Model):
 
                         if total_prices > 0:
                             data['avg_price'] = sum(price if price is not None else 0 for price in data['prices']) / total_prices
-                            data['avg_price'] = data['avg_price'] if data['avg_price'] is not 0 else None
+                            data['avg_price'] = (data['avg_price'] / 100) if data['avg_price'] is not 0 else None
                         else:
                             data['avg_price'] = None
 
