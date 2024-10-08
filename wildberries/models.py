@@ -411,7 +411,7 @@ class Campaign(models.Model):
                             interval_data[keyword]['positions'].append(log['position'])
 
                         if 'advert_position' in log and 'advert_competitors_count' in log:
-                            if log['advert_competitors_count'] != 0:  # Проверяем, чтобы избежать деления на ноль
+                            if log['advert_competitors_count'] != 0 and log['advert_position'] > 0:  # Проверяем, чтобы избежать деления на ноль
                                 # Преобразуем результат деления в float, чтобы можно было округлить
                                 strength = 1 - round(float(log['advert_position']) / log['advert_competitors_count'], 2)
                                 interval_data[keyword]['advert_positions'].append(strength)
