@@ -434,41 +434,40 @@ class Campaign(models.Model):
 
                     # Подсчет средних значений для каждого параметра
                     for keyword, data in interval_data.items():
-                        # Заменяем None на 0 при расчёте среднего, но учитываем общее количество элементов (включая None)
-                        total_positions = len(data['positions'])
-                        total_advert_positions = len(data['advert_positions'])
-                        total_competitors_counts = len(data['competitors_counts'])
-                        total_prices = len(data['prices'])
-                        total_cpms = len(data['cpms'])
+                        # Подсчет количества ненулевых позиций
+                        non_null_positions = [pos for pos in data['positions'] if pos is not None]
+                        non_null_advert_positions = [pos for pos in data['advert_positions'] if pos is not None]
+                        non_null_competitors_counts = [count for count in data['competitors_counts'] if
+                                                       count is not None]
+                        non_null_prices = [price for price in data['prices'] if price is not None]
+                        non_null_cpms = [cpm for cpm in data['cpms'] if cpm is not None]
 
-                        # Если список пустой, оставляем None
-                        if total_positions > 0:
-                            data['avg_position'] = sum(pos if pos is not None else 0 for pos in data['positions']) / total_positions
-                            data['avg_position'] = data['avg_position'] if data['avg_position'] is not 0 else None
+                        # Рассчитываем средние значения, если есть ненулевые элементы, иначе оставляем None
+                        if non_null_positions:
+                            data['avg_position'] = sum(non_null_positions) / len(non_null_positions)
                         else:
                             data['avg_position'] = None
 
-                        if total_advert_positions > 0:
-                            data['avg_advert_position'] = sum(pos if pos is not None else 0 for pos in data['advert_positions']) / total_advert_positions
-                            data['avg_advert_position'] = data['avg_advert_position'] if data['avg_advert_position'] is not 0 else None
+                        if non_null_advert_positions:
+                            data['avg_advert_position'] = sum(non_null_advert_positions) / len(
+                                non_null_advert_positions)
                         else:
                             data['avg_advert_position'] = None
 
-                        if total_competitors_counts > 0:
-                            data['avg_competitors_count'] = sum(count if count is not None else 0 for count in data['competitors_counts']) / total_competitors_counts
-                            data['avg_competitors_count'] = data['avg_competitors_count'] if data['avg_competitors_count'] is not 0 else None
+                        if non_null_competitors_counts:
+                            data['avg_competitors_count'] = sum(non_null_competitors_counts) / len(
+                                non_null_competitors_counts)
                         else:
                             data['avg_competitors_count'] = None
 
-                        if total_prices > 0:
-                            data['avg_price'] = sum(price if price is not None else 0 for price in data['prices']) / total_prices
-                            data['avg_price'] = (data['avg_price'] / 100) if data['avg_price'] is not 0 else None
+                        if non_null_prices:
+                            data['avg_price'] = sum(non_null_prices) / len(
+                                non_null_prices) / 100  # Переводим в нужный формат (цены)
                         else:
                             data['avg_price'] = None
 
-                        if total_cpms > 0:
-                            data['avg_cpm'] = sum(cpm if cpm is not None else 0 for cpm in data['cpms']) / total_cpms
-                            data['avg_cpm'] = data['avg_cpm'] if data['avg_cpm'] is not 0 else None
+                        if non_null_cpms:
+                            data['avg_cpm'] = sum(non_null_cpms) / len(non_null_cpms)
                         else:
                             data['avg_cpm'] = None
 

@@ -1,3 +1,4 @@
+from click import style
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
@@ -181,10 +182,11 @@ class CreateMonitoringSettingsForm(forms.ModelForm):
 
 class AddKeywordsMonitoringForm(forms.ModelForm):
     keywords_monitoring_add = forms.MultipleChoiceField(
-        choices=[],  # Здесь позже подставим существующие данные
-        widget=forms.SelectMultiple(attrs={'required': False}),
+        choices=[],
+        widget=forms.SelectMultiple(attrs={'required': False, 'style': 'min-height: 400px;'}),
         label='Удалить ключевые фразы',
-        required=False
+        required=False,
+
     )
     new_keywords = forms.CharField(
         widget=forms.TextInput(attrs={'placeholder': 'Введите новые ключевые фразы через запятую'}),
