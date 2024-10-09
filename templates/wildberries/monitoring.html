@@ -404,28 +404,28 @@
         }
 
         try {
-            const expenses = data.dataset[5][4].data.getLastElementMoreThenNull();
+            const expenses = data.datasets[5][4].data.getLastElementMoreThenNull();
             document.getElementById('expenses_count').textContent = formatNumber(expenses);  // Затраты
         } catch (error) {
             console.error('Ошибка при обновлении затрат:', error);
         }
 
         try {
-            const impressions = data.dataset[5][0].data.getLastElementMoreThenNull();
+            const impressions = data.datasets[5][0].data.getLastElementMoreThenNull();
             document.getElementById('impressions_count').textContent = formatNumber(impressions);  // Показы
         } catch (error) {
             console.error('Ошибка при обновлении показов:', error);
         }
 
         try {
-            const clicks = data.dataset[5][1].data.getLastElementMoreThenNull();
+            const clicks = data.datasets[5][1].data.getLastElementMoreThenNull();
             document.getElementById('clicks_count').textContent = formatNumber(clicks);  // Клики
         } catch (error) {
             console.error('Ошибка при обновлении кликов:', error);
         }
 
         try {
-            const orders = data.dataset[5][6].data.getLastElementMoreThenNull();
+            const orders = data.datasets[5][6].data.getLastElementMoreThenNull();
             document.getElementById('orders_count').textContent = formatNumber(orders);  // Заказы
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
