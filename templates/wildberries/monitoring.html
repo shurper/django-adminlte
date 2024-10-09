@@ -66,10 +66,18 @@
                     <!-- Chart.js canvas -->
                     <canvas id="autobidderChart" height="1000"></canvas>
                     </div>
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input spinner" id="auto_update_switch">
-                        <label class="custom-control-label" for="auto_update_switch">Обновлять график автоматически</label>
+                    <div class="input-group">
+                        <div class="custom-control custom-switch col-3">
+                            <input type="checkbox" class="custom-control-input spinner" id="auto_update_switch">
+                            <label class="custom-control-label" for="auto_update_switch">Обновлять график автоматически</label>
+                        </div>
+                        <div class="custom-control custom-switch col-3">
+                            <input type="checkbox" class="custom-control-input spinner" id="toggleLegendButton" data-ignore_me="1">
+                            <label class="custom-control-label" for="toggleLegendButton">Отображать легенду</label>
+                        </div>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -495,7 +503,7 @@ function renderChart(data) {
                     annotations: [...dayAnnotations, annotation]
                 },
                 legend: {
-                    display: true,
+                    display: getCookie('legendModeState'),
                     position: 'top',
                     align: 'center',
                     labels: {
@@ -596,6 +604,21 @@ function renderChart(data) {
             }
         }
     });
+    // Логика для управления видимостью легенды через чекбокс
+    const toggleLegendCheckbox = document.getElementById('toggleLegendButton');
+    if(toggleLegendCheckbox){
+        toggleLegendCheckbox.checked = getCookie('legendModeState');
+        // Определяем функцию обработчика
+        function toggleLegend() {
+            setCookie('legendModeState', +this.checked, 300);
+            autobidderChart.options.plugins.legend.display = this.checked;
+            autobidderChart.update();
+        }
+        // Удаляем обработчик события
+        toggleLegendCheckbox.removeEventListener('change', toggleLegend);
+        // Добавляем событие для изменения состояния чекбокса
+        toggleLegendCheckbox.addEventListener('change', toggleLegend);
+    }
 
     restoreLegendVisibility(autobidderChart);
 }
@@ -606,6 +629,7 @@ function loadCharts() {
 }
 
 $('#ab_monitor').find('select, input').on('change', function () {
+    if(this.dataset.ignore_me) return;
     loadCharts();
 });
 let chartUpdaterInProgress = false;
