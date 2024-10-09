@@ -393,34 +393,45 @@
 
 
     function updateWidgetData(data) {
+        function formatNumber(value) {
+            // Проверка на число
+            if (typeof value === 'number') {
+                // Если значение дробное, округляем до 2 знаков после запятой
+                return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(2).toLocaleString();
+            }
+            // Возвращаем исходное значение, если оно не число
+            return value;
+        }
+
         try {
-            document.getElementById('expenses_count').textContent = data.datasets[5][4].data.getLastElementMoreThenNull().toLocaleString();  // Затраты
+            const expenses = data[5][4].data.getLastElementMoreThenNull();
+            document.getElementById('expenses_count').textContent = formatNumber(expenses);  // Затраты
         } catch (error) {
             console.error('Ошибка при обновлении затрат:', error);
-            //document.getElementById('expenses_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('impressions_count').textContent = data.datasets[5][0].data.getLastElementMoreThenNull().toLocaleString();  // Показы
+            const impressions = data[5][0].data.getLastElementMoreThenNull();
+            document.getElementById('impressions_count').textContent = formatNumber(impressions);  // Показы
         } catch (error) {
             console.error('Ошибка при обновлении показов:', error);
-            //document.getElementById('impressions_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('clicks_count').textContent = data.datasets[5][1].data.getLastElementMoreThenNull().toLocaleString();  // Клики
+            const clicks = data[5][1].data.getLastElementMoreThenNull();
+            document.getElementById('clicks_count').textContent = formatNumber(clicks);  // Клики
         } catch (error) {
             console.error('Ошибка при обновлении кликов:', error);
-            //document.getElementById('clicks_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('orders_count').textContent = data.datasets[5][6].data.getLastElementMoreThenNull().toLocaleString();  // Заказы
+            const orders = data[5][6].data.getLastElementMoreThenNull();
+            document.getElementById('orders_count').textContent = formatNumber(orders);  // Заказы
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
-            //document.getElementById('orders_count').textContent = '--';  // Значение по умолчанию
         }
     }
+
 
 
 
