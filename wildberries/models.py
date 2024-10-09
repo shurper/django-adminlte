@@ -411,12 +411,10 @@ class Campaign(models.Model):
                             interval_data[keyword]['positions'].append(log['position'])
 
                         if 'advert_position' in log and 'advert_competitors_count' in log:
-                            if log['advert_competitors_count'] != 0 and log['advert_position'] > 0:  # Проверяем, чтобы избежать деления на ноль
-                                # Преобразуем результат деления в float, чтобы можно было округлить
+                            if log['advert_competitors_count'] > 0 and log['advert_position'] > 0:
                                 strength = 1 - round(float(log['advert_position']) / log['advert_competitors_count'], 2)
                                 interval_data[keyword]['advert_positions'].append(strength)
                             else:
-                                # Если кол-во конкурентов 0, добавляем None или другое значение
                                 interval_data[keyword]['advert_positions'].append(None)
 
                         if 'advert_competitors_count' in log:

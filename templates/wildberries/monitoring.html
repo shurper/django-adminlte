@@ -10,6 +10,7 @@
 {% endblock extrastyle %}
 
 {% block content %}
+
 <div class="row">
     <div class="col-12">
         <!-- Logs and Chart -->
@@ -30,7 +31,7 @@
                             <input type="text" class="form-control float-right" id="date_range">
                         </div>
                     </div>
-                        <!-- Selectors for the chart -->
+                    <!-- Selectors for the chart -->
                     <div class="form-group col-2">
                         <label for="time_interval">Интервал:</label>
                         <select class="form-control select2bs4" id="time_interval">
@@ -58,21 +59,84 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3><span id="expenses_count">--</span><sup style="font-size: 20px">руб</sup></h3>
+                                <p>ЗАТРАТЫ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-bag"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3><span id="impressions_count">--</span><sup style="font-size: 20px"></sup></h3>
 
+                                <p>ПОКАЗЫ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-stats-bars"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    <div class="col-lg-3 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-warning">
+                            <div class="inner">
+                                <h3><span id="clicks_count">--</span><sup style="font-size: 20px"></sup></h3>
+
+                                <p>КЛИКИ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-person-add"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    <div class="col-lg-3 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-danger">
+                            <div class="inner">
+                                <h3><span id="orders_count">--</span><sup style="font-size: 20px"></sup></h3>
+
+                                <p>ЗАКАЗЫ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-pie-graph"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                </div>
 
 
                 <div class="form-group">
                     <div style=" overflow-x: auto;">
-                    <!-- Chart.js canvas -->
-                    <canvas id="autobidderChart" height="1000"></canvas>
+                        <!-- Chart.js canvas -->
+                        <canvas id="autobidderChart" height="1000"></canvas>
                     </div>
                     <div class="input-group">
                         <div class="custom-control custom-switch col-3">
                             <input type="checkbox" class="custom-control-input spinner" id="auto_update_switch">
-                            <label class="custom-control-label" for="auto_update_switch">Обновлять график автоматически</label>
+                            <label class="custom-control-label" for="auto_update_switch">Обновлять график
+                                автоматически</label>
                         </div>
                         <div class="custom-control custom-switch col-3">
-                            <input type="checkbox" class="custom-control-input spinner" id="toggleLegendButton" data-ignore_me="1">
+                            <input type="checkbox" class="custom-control-input spinner" id="toggleLegendButton"
+                                   data-ignore_me="1">
                             <label class="custom-control-label" for="toggleLegendButton">Отображать легенду</label>
                         </div>
                     </div>
@@ -99,21 +163,24 @@
 
                         {% csrf_token %}
                         {% for field in create_form %}
-                            <div class="form-group">
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback">
-                                        {{ field.errors }}
-                                    </div>
-                                {% endif %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="invalid-feedback">
+                                {{ field.errors }}
                             </div>
+                            {% endif %}
+                        </div>
                         {% endfor %}
                     </div>
                     <div class="card-footer">
                         <button type="submit" name="create_settings" class="btn btn-success">Сохранить</button>
-                        <a class="btn btn-primary right" href="{% url 'monitoring_additional_words_view' campaign.id %}">Управление ключевыми фразами</a>
-                        <a class="btn btn-primary right" href="{% url 'keywords_monitoring_view' campaign.id %}">Мониторинг ключевых фраз</a>
+                        <a class="btn btn-primary right"
+                           href="{% url 'monitoring_additional_words_view' campaign.id %}">Управление ключевыми
+                            фразами</a>
+                        <a class="btn btn-primary right" href="{% url 'keywords_monitoring_view' campaign.id %}">Мониторинг
+                            ключевых фраз</a>
                     </div>
                 </form>
             </div>
@@ -136,559 +203,602 @@
 
 
 <script>
-// Initialize Select2 Elements
-jQuery('.select2bs4').select2({
-    theme: 'bootstrap4'
-});
-const rangepicker = $('#date_range').daterangepicker({
-    //opens: 'right', // Change this based on your requirement
-    //autoUpdateInput: false,
-    locale: {
-        cancelLabel: 'Clear',
-        format: 'DD-MM-YYYY' // Specify the format used in the picker
-    }
-}).data('daterangepicker');
-
-
-// Fetch destinations and products dynamically
-fetchDestinations();
-fetchProducts();
-
-function fetchDestinations() {
-    // Fetch destinations from the server (replace with actual API endpoint)
-    $.ajax({
-        url: '{% url "api_get_destinations" %}',
-        method: 'GET',
-        success: function (data) {
-            let inp = $('#destination');
-            inp.empty();
-            $.each(data, function (index, value) {
-                inp.append($('<option>', {
-                    value: value.id,
-                    text: value.name
-                }));
-            });
-            setTimeout(() => {
-                loadCharts();
-            }, 1000);
-
+    // Initialize Select2 Elements
+    jQuery('.select2bs4').select2({
+        theme: 'bootstrap4'
+    });
+    const rangepicker = $('#date_range').daterangepicker({
+        //opens: 'right', // Change this based on your requirement
+        //autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear',
+            format: 'DD-MM-YYYY' // Specify the format used in the picker
         }
-    });
-}
-
-function fetchProducts() {
-    // Fetch products from the server (replace with actual API endpoint)
-    $.ajax({
-        url: '{% url "api_get_products" %}',
-        method: 'GET',
-        data: {"campaign_id": "{{ campaign.id }}"},
-        success: function (data) {
-            let inp = $('#product_id');
-            inp.empty();
-            $.each(data, function (index, value) {
-                inp.append($('<option>', {
-                    value: value.id,
-                    text: value.name
-                }));
-            });
-            setTimeout(() => {
-                loadCharts();
-            }, 1000);
-        }
-    });
-}
+    }).data('daterangepicker');
 
 
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-}
+    // Fetch destinations and products dynamically
+    fetchDestinations();
+    fetchProducts();
 
-function setCookie(name, value, days) {
-    let expires = '';
-    if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = `; expires=${date.toUTCString()}`;
-    }
-    document.cookie = `${name}=${value || ''}${expires}; path=/`;
-}
+    function fetchDestinations() {
+        // Fetch destinations from the server (replace with actual API endpoint)
+        $.ajax({
+            url: '{% url "api_get_destinations" %}',
+            method: 'GET',
+            success: function (data) {
+                let inp = $('#destination');
+                inp.empty();
+                $.each(data, function (index, value) {
+                    inp.append($('<option>', {
+                        value: value.id,
+                        text: value.name
+                    }));
+                });
+                setTimeout(() => {
+                    loadCharts();
+                }, 1000);
 
-function getRandomColor(target) {
-    // Check if the color for the target is already stored in cookies
-    let color = getCookie(target);
-    if (color) {
-        return color;  // Return the stored color if it exists
-    }
-
-    // Generate a new color if not found in cookies
-    const letters = '0123456789ABCDEF';
-    color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-
-    // Store the new color in cookies with a 30-day expiration
-    setCookie(target, color, 30);
-
-    return color;
-}
-
-function saveLegendVisibility(chart) {
-    const legendState = {};
-    chart.data.datasets.forEach((dataset, index) => {
-        legendState[dataset.label] = !chart.isDatasetVisible(index);
-    });
-    setCookie('legendState', JSON.stringify(legendState), 30);
-}
-
-function restoreLegendVisibility(chart) {
-    const legendState = getCookie('legendState');
-    if (legendState) {
-        const parsedState = JSON.parse(legendState);
-        //console.log('Legend state loaded:', parsedState);
-        chart.data.datasets.forEach((dataset, index) => {
-            if (parsedState[dataset.label] !== undefined) {
-                chart.setDatasetVisibility(index, !parsedState[dataset.label]);
             }
         });
-        chart.update();
-    }
-}
-
-// Function to update the chart
-let autobidderChart; // Глобальная переменная для хранения экземпляра графика
-let statChart; // Глобальная переменная для хранения экземпляра графика
-let panTimeout = null;
-
-const dataCache = {};
-let debounceTimeout = null;
-
-function updateChart() {
-    const timeInterval = $('#time_interval').val();
-    const dateRange = $('#date_range').val();
-    const destination = $('#destination').val();
-    const productId = $('#product_id').val();
-    const campaignId = '{{ campaign.id }}';
-
-    const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
-    const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
-    const today = moment().startOf('day');
-    if (autobidderChart) {
-        saveLegendVisibility(autobidderChart);
     }
 
-    if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
-        console.log("Load from cache: " + dateRange);
-        renderChart(dataCache[cacheKey]);
-    } else {
-        clearTimeout(debounceTimeout);
-        debounceTimeout = setTimeout(() => {
-            console.log("Load from server: " + dateRange);
-            $.ajax({
-                url: '{% url "api_get_chart_data" %}',
-                method: 'POST',
-                data: {
-                    time_interval: timeInterval,
-                    date_range: dateRange,
-                    destination: destination,
-                    product_id: productId,
-                    campaign_id: campaignId,
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (data) {
-                    if (!data || !data.labels || !data.datasets) {
-                        console.error('Invalid data received from the server');
-                        return;
-                    }
+    function fetchProducts() {
+        // Fetch products from the server (replace with actual API endpoint)
+        $.ajax({
+            url: '{% url "api_get_products" %}',
+            method: 'GET',
+            data: {"campaign_id": "{{ campaign.id }}"},
+            success: function (data) {
+                let inp = $('#product_id');
+                inp.empty();
+                $.each(data, function (index, value) {
+                    inp.append($('<option>', {
+                        value: value.id,
+                        text: value.name
+                    }));
+                });
+                setTimeout(() => {
+                    loadCharts();
+                }, 1000);
+            }
+        });
+    }
 
-                    dataCache[cacheKey] = data;
-                    renderChart(data);
-                },
-                error: function (xhr, status, error) {
-                    console.error('AJAX error:', status, error);
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function setCookie(name, value, days) {
+        let expires = '';
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = `; expires=${date.toUTCString()}`;
+        }
+        document.cookie = `${name}=${value || ''}${expires}; path=/`;
+    }
+
+    function getRandomColor(target) {
+        // Check if the color for the target is already stored in cookies
+        let color = getCookie(target);
+        if (color) {
+            return color;  // Return the stored color if it exists
+        }
+
+        // Generate a new color if not found in cookies
+        const letters = '0123456789ABCDEF';
+        color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+
+        // Store the new color in cookies with a 30-day expiration
+        setCookie(target, color, 30);
+
+        return color;
+    }
+
+    function saveLegendVisibility(chart) {
+        const legendState = {};
+        chart.data.datasets.forEach((dataset, index) => {
+            legendState[dataset.label] = !chart.isDatasetVisible(index);
+        });
+        setCookie('legendState', JSON.stringify(legendState), 30);
+    }
+
+    function restoreLegendVisibility(chart) {
+        const legendState = getCookie('legendState');
+        if (legendState) {
+            const parsedState = JSON.parse(legendState);
+            //console.log('Legend state loaded:', parsedState);
+            chart.data.datasets.forEach((dataset, index) => {
+                if (parsedState[dataset.label] !== undefined) {
+                    chart.setDatasetVisibility(index, !parsedState[dataset.label]);
                 }
             });
-        }, 500);
-    }
-}
-
-function renderChart(data) {
-    const ctx = document.getElementById('autobidderChart').getContext('2d');
-
-    let currentMin = null;
-    let currentMax = null;
-    if (autobidderChart && autobidderChart.options.scales.x) {
-        currentMin = autobidderChart.options.scales.x.min;
-        currentMax = autobidderChart.options.scales.x.max;
-    }
-
-    if (autobidderChart) {
-        autobidderChart.destroy();
-    }
-
-    if (!data || !data.labels || !data.datasets) {
-        console.error('Invalid data received from the server');
-        return;
-    }
-
-    const allDatasets = [];
-    data.datasets.forEach((datasetGroup, groupIndex) => {
-        if (!Array.isArray(datasetGroup)) {
-            console.error('Invalid dataset group received from the server');
-            return;
+            chart.update();
         }
-        datasetGroup.forEach(dataset => {
-            if (!dataset || !dataset.label || !dataset.data) {
-                console.error('Invalid dataset received from the server');
-                return;
-            }
-            const color = getRandomColor(dataset.label);
-            dataset.borderColor = color;
-            dataset.backgroundColor = color;
-            dataset.fill = false; // Не заполнять область под линией
-            dataset.yAxisID = 'y' + groupIndex; // Привязываем к нужной оси Y
-            allDatasets.push(dataset);
-        });
-    });
-
-    const dayAnnotations = [];
-    let currentDay = moment(data.labels[0]).startOf('day');
-    let nextDay = currentDay.clone().add(1, 'day');
-    let isGrey = true; // Начнем с серой полосы
-
-    while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
-        dayAnnotations.push({
-            type: 'box',
-            xMin: currentDay.toISOString(),
-            xMax: nextDay.toISOString(),
-            backgroundColor: isGrey ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
-            borderWidth: 0
-        });
-
-        currentDay = nextDay.clone();
-        nextDay = currentDay.clone().add(1, 'day');
-        isGrey = !isGrey; // Чередуем цвет полосы
     }
 
-    const annotation = {
-        type: 'line',
-        borderColor: 'grey',
-        borderWidth: 1,
-        display: true,
-        label: {
-            display: true,
-            content: moment().format('HH:mm'),
-            position: 'start'
-        },
-        scaleID: 'x',
-        value: moment().format('YYYY-MM-DDTHH:mm:ssZ')
+    // Function to update the chart
+    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
+    let statChart; // Глобальная переменная для хранения экземпляра графика
+    let panTimeout = null;
+
+    const dataCache = {};
+    let debounceTimeout = null;
+
+    function updateChart() {
+        const timeInterval = $('#time_interval').val();
+        const dateRange = $('#date_range').val();
+        const destination = $('#destination').val();
+        const productId = $('#product_id').val();
+        const campaignId = '{{ campaign.id }}';
+
+        const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
+        const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
+        const today = moment().startOf('day');
+        if (autobidderChart) {
+            saveLegendVisibility(autobidderChart);
+        }
+
+        if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
+            console.log("Load from cache: " + dateRange);
+            renderChart(dataCache[cacheKey]);
+        } else {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                console.log("Load from server: " + dateRange);
+                $.ajax({
+                    url: '{% url "api_get_chart_data" %}',
+                    method: 'POST',
+                    data: {
+                        time_interval: timeInterval,
+                        date_range: dateRange,
+                        destination: destination,
+                        product_id: productId,
+                        campaign_id: campaignId,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function (data) {
+                        if (!data || !data.labels || !data.datasets) {
+                            console.error('Invalid data received from the server');
+                            return;
+                        }
+
+                        dataCache[cacheKey] = data;
+                        renderChart(data);
+                        updateWidgetData(data);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX error:', status, error);
+                    }
+                });
+            }, 500);
+        }
+    }
+
+    Array.prototype.getLastElementMoreThenNull = function() {
+        for (let i = this.length - 1; i >= 0; i--) {
+            if (this[i] !== null && this[i] !== 0) {
+                return this[i];
+            }
+        }
+        return 0;  // Возвращаем 0, если все элементы либо 0, либо null
     };
 
 
-    const labels = data.labels;
+    function updateWidgetData(data) {
+        try {
+            document.getElementById('expenses_count').textContent = data[5][4].data.getLastElementMoreThenNull().toLocaleString();  // Затраты
+        } catch (error) {
+            console.error('Ошибка при обновлении затрат:', error);
+            //document.getElementById('expenses_count').textContent = '--';  // Значение по умолчанию
+        }
 
-    autobidderChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: allDatasets
-        },
-        options: {
-            maintainAspectRatio: false,
-            animation: false,
-            scales: {
-                x: {
-                    type: 'time',
-                    title: {
-                        display: true,
-                        text: 'Время'
-                    },
-                    min: currentMin,
-                    max: currentMax,
-                    time: {
-                        unit: 'hour',
-                        displayFormats: {
-                            hour: 'HH:mm',
-                            day: 'D MMM`YY'
-                        }
-                    },
-                    ticks: {
-                        major: {
-                            enabled: true, // Включить крупные деления
-                            displayFormats: {
-                                day: 'D MMM`YY' // Формат даты для крупных делений
-                            }
-                        },
-                        source: 'auto',
-                        autoSkip: true,
-                        maxRotation: 0,
-                        maxTicksLimit: 24
-                    }
-                },
-                y0: {
-                    title: {
-                        display: true,
-                        text: 'Позиция на странице'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 2,
-                },
-                y1: {
-                    title: {
-                        display: true,
-                        text: 'Сила'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 1,
-                    grid: {
-                        drawOnChartArea: true
-                    },
-                },
-                y2: {
-                    title: {
-                        display: true,
-                        text: 'Конкуренция'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 1,
-                    grid: {
-                        drawOnChartArea: true
-                    },
-                },
-                y3: {
-                    title: {
-                        display: true,
-                        text: 'Цена'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 1,
-                    grid: {
-                        drawOnChartArea: true
-                    },
-                },
-                y4: {
-                    title: {
-                        display: true,
-                        text: 'Ставка'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 1,
-                    grid: {
-                        drawOnChartArea: true
-                    },
-                },
-                y5: {
-                    title: {
-                        display: true,
-                        text: 'Статистика'
-                    },
-                    offset: true,
-                    stack: 'stack_1',
-                    stackWeight: 1,
-                    grid: {
-                        drawOnChartArea: true
-                    },
+        try {
+            document.getElementById('impressions_count').textContent = data[5][0].data.getLastElementMoreThenNull().toLocaleString();  // Показы
+        } catch (error) {
+            console.error('Ошибка при обновлении показов:', error);
+            //document.getElementById('impressions_count').textContent = '--';  // Значение по умолчанию
+        }
+
+        try {
+            document.getElementById('clicks_count').textContent = data[5][1].data.getLastElementMoreThenNull().toLocaleString();  // Клики
+        } catch (error) {
+            console.error('Ошибка при обновлении кликов:', error);
+            //document.getElementById('clicks_count').textContent = '--';  // Значение по умолчанию
+        }
+
+        try {
+            document.getElementById('orders_count').textContent = data[5][6].data.getLastElementMoreThenNull().toLocaleString();  // Заказы
+        } catch (error) {
+            console.error('Ошибка при обновлении заказов:', error);
+            //document.getElementById('orders_count').textContent = '--';  // Значение по умолчанию
+        }
+    }
+
+
+
+    function renderChart(data) {
+        const ctx = document.getElementById('autobidderChart').getContext('2d');
+
+        let currentMin = null;
+        let currentMax = null;
+        if (autobidderChart && autobidderChart.options.scales.x) {
+            currentMin = autobidderChart.options.scales.x.min;
+            currentMax = autobidderChart.options.scales.x.max;
+        }
+
+        if (autobidderChart) {
+            autobidderChart.destroy();
+        }
+
+        if (!data || !data.labels || !data.datasets) {
+            console.error('Invalid data received from the server');
+            return;
+        }
+
+        const allDatasets = [];
+        data.datasets.forEach((datasetGroup, groupIndex) => {
+            if (!Array.isArray(datasetGroup)) {
+                console.error('Invalid dataset group received from the server');
+                return;
+            }
+            datasetGroup.forEach(dataset => {
+                if (!dataset || !dataset.label || !dataset.data) {
+                    console.error('Invalid dataset received from the server');
+                    return;
                 }
+                const color = getRandomColor(dataset.label);
+                dataset.borderColor = color;
+                dataset.backgroundColor = color;
+                dataset.fill = false; // Не заполнять область под линией
+                dataset.yAxisID = 'y' + groupIndex; // Привязываем к нужной оси Y
+                allDatasets.push(dataset);
+            });
+        });
 
+        const dayAnnotations = [];
+        let currentDay = moment(data.labels[0]).startOf('day');
+        let nextDay = currentDay.clone().add(1, 'day');
+        let isGrey = true; // Начнем с серой полосы
+
+        while (currentDay.isBefore(moment(data.labels[data.labels.length - 1]))) {
+            dayAnnotations.push({
+                type: 'box',
+                xMin: currentDay.toISOString(),
+                xMax: nextDay.toISOString(),
+                backgroundColor: isGrey ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
+                borderWidth: 0
+            });
+
+            currentDay = nextDay.clone();
+            nextDay = currentDay.clone().add(1, 'day');
+            isGrey = !isGrey; // Чередуем цвет полосы
+        }
+
+        const annotation = {
+            type: 'line',
+            borderColor: 'grey',
+            borderWidth: 1,
+            display: true,
+            label: {
+                display: true,
+                content: moment().format('HH:mm'),
+                position: 'start'
             },
-            plugins: {
-                annotation: {
-                    annotations: [...dayAnnotations, annotation]
-                },
-                legend: {
-                    display: getCookie('legendModeState'),
-                    position: 'top',
-                    align: 'center',
-                    labels: {
-                        boxWidth: 15,
-                        boxHeight: 15,
-                        font: {
-                            size: 12,
-                            family: 'Arial',
-                            style: 'normal',
-                            weight: 'normal'
+            scaleID: 'x',
+            value: moment().format('YYYY-MM-DDTHH:mm:ssZ')
+        };
+
+
+        const labels = data.labels;
+
+        autobidderChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: allDatasets
+            },
+            options: {
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        title: {
+                            display: true,
+                            text: 'Время'
                         },
-                        color: '#333',
-                        padding: 10,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                crosshair: {
-                    line: {
-                        color: 'black',  // Цвет перекрестия
-                        width: 1         // Толщина линии перекрестия
-                    },
-                    sync: {
-                        enabled: false,            // Синхронизация между графиками
-                        group: 1,                  // Группа синхронизации
-                        suppressTooltips: false    // Подавление тултипов
-                    },
-                    zoom: {
-                        enabled: false,                                      // Включение увеличения
-                        zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',      // Цвет области увеличения
-                        zoomboxBorderColor: '#48F',                          // Цвет границы области увеличения
-                        zoomButtonText: 'Reset Zoom',                        // Текст кнопки сброса увеличения
-                        zoomButtonClass: 'reset-zoom-button'                 // Класс кнопки сброса увеличения
-                    },
-                    callbacks: {
-                        beforeZoom: function (start, end) {                  // Колбэк перед увеличением
-                            return true;
-                        },
-                        afterZoom: function (start, end) {                   // Колбэк после увеличения
-                            return true;
-                        }
-                    }
-                },
-                zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x',
-                        onPanComplete: function ({chart}) {
-                            if (panTimeout) {
-                                clearTimeout(panTimeout);
+                        min: currentMin,
+                        max: currentMax,
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'HH:mm',
+                                day: 'D MMM`YY'
                             }
-                            panTimeout = setTimeout(() => {
-                                const newMin = chart.scales.x.min;
-                                const newMax = chart.scales.x.max;
+                        },
+                        ticks: {
+                            major: {
+                                enabled: true, // Включить крупные деления
+                                displayFormats: {
+                                    day: 'D MMM`YY' // Формат даты для крупных делений
+                                }
+                            },
+                            source: 'auto',
+                            autoSkip: true,
+                            maxRotation: 0,
+                            maxTicksLimit: 24
+                        }
+                    },
+                    y0: {
+                        title: {
+                            display: true,
+                            text: 'Позиция на странице'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 2,
+                    },
+                    y1: {
+                        title: {
+                            display: true,
+                            text: 'Сила'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 1,
+                        grid: {
+                            drawOnChartArea: true
+                        },
+                    },
+                    y2: {
+                        title: {
+                            display: true,
+                            text: 'Конкуренция'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 1,
+                        grid: {
+                            drawOnChartArea: true
+                        },
+                    },
+                    y3: {
+                        title: {
+                            display: true,
+                            text: 'Цена'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 1,
+                        grid: {
+                            drawOnChartArea: true
+                        },
+                    },
+                    y4: {
+                        title: {
+                            display: true,
+                            text: 'Ставка'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 1,
+                        grid: {
+                            drawOnChartArea: true
+                        },
+                    },
+                    y5: {
+                        title: {
+                            display: true,
+                            text: 'Статистика'
+                        },
+                        offset: true,
+                        stack: 'stack_1',
+                        stackWeight: 1,
+                        grid: {
+                            drawOnChartArea: true
+                        },
+                    }
 
-                                const newStartDate = moment(newMin).format('DD-MM-YYYY');
-                                const newEndDate = moment(newMax).format('DD-MM-YYYY');
-
-                                rangepicker.setStartDate(newStartDate);
-                                rangepicker.setEndDate(newEndDate);
-
-                                updateChart();
-                            }, 500);
+                },
+                plugins: {
+                    annotation: {
+                        annotations: [...dayAnnotations, annotation]
+                    },
+                    legend: {
+                        display: getCookie('legendModeState'),
+                        position: 'bottom',
+                        align: 'center',
+                        labels: {
+                            boxWidth: 15,
+                            boxHeight: 15,
+                            font: {
+                                size: 12,
+                                family: 'Arial',
+                                style: 'normal',
+                                weight: 'normal'
+                            },
+                            color: '#333',
+                            padding: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    crosshair: {
+                        line: {
+                            color: 'black',  // Цвет перекрестия
+                            width: 1         // Толщина линии перекрестия
+                        },
+                        sync: {
+                            enabled: false,            // Синхронизация между графиками
+                            group: 1,                  // Группа синхронизации
+                            suppressTooltips: false    // Подавление тултипов
+                        },
+                        zoom: {
+                            enabled: false,                                      // Включение увеличения
+                            zoomboxBackgroundColor: 'rgba(66,133,244,0.2)',      // Цвет области увеличения
+                            zoomboxBorderColor: '#48F',                          // Цвет границы области увеличения
+                            zoomButtonText: 'Reset Zoom',                        // Текст кнопки сброса увеличения
+                            zoomButtonClass: 'reset-zoom-button'                 // Класс кнопки сброса увеличения
+                        },
+                        callbacks: {
+                            beforeZoom: function (start, end) {                  // Колбэк перед увеличением
+                                return true;
+                            },
+                            afterZoom: function (start, end) {                   // Колбэк после увеличения
+                                return true;
+                            }
                         }
                     },
                     zoom: {
-                        wheel: {
+                        pan: {
                             enabled: true,
-                        },
-                        drag: {
-                            enabled: false,
-                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'x',
-                        speed: 0.1,
-                        onZoomComplete: function ({chart}) {
-                            if (panTimeout) {
-                                clearTimeout(panTimeout);
+                            mode: 'x',
+                            onPanComplete: function ({chart}) {
+                                if (panTimeout) {
+                                    clearTimeout(panTimeout);
+                                }
+                                panTimeout = setTimeout(() => {
+                                    const newMin = chart.scales.x.min;
+                                    const newMax = chart.scales.x.max;
+
+                                    const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                    const newEndDate = moment(newMax).format('DD-MM-YYYY');
+
+                                    rangepicker.setStartDate(newStartDate);
+                                    rangepicker.setEndDate(newEndDate);
+
+                                    updateChart();
+                                }, 500);
                             }
-                            panTimeout = setTimeout(() => {
-                                const newMin = chart.scales.x.min;
-                                const newMax = chart.scales.x.max;
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            drag: {
+                                enabled: false,
+                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',
+                            speed: 0.1,
+                            onZoomComplete: function ({chart}) {
+                                if (panTimeout) {
+                                    clearTimeout(panTimeout);
+                                }
+                                panTimeout = setTimeout(() => {
+                                    const newMin = chart.scales.x.min;
+                                    const newMax = chart.scales.x.max;
 
-                                const newStartDate = moment(newMin).format('DD-MM-YYYY');
-                                const newEndDate = moment(newMax).format('DD-MM-YYYY');
+                                    const newStartDate = moment(newMin).format('DD-MM-YYYY');
+                                    const newEndDate = moment(newMax).format('DD-MM-YYYY');
 
-                                rangepicker.setStartDate(newStartDate);
-                                rangepicker.setEndDate(newEndDate);
+                                    rangepicker.setStartDate(newStartDate);
+                                    rangepicker.setEndDate(newEndDate);
 
-                                updateChart();
-                            }, 500);
+                                    updateChart();
+                                }, 500);
+                            }
                         }
                     }
                 }
             }
+        });
+        // Логика для управления видимостью легенды через чекбокс
+        const toggleLegendCheckbox = document.getElementById('toggleLegendButton');
+        if(toggleLegendCheckbox){
+            toggleLegendCheckbox.checked = getCookie('legendModeState');
+            // Определяем функцию обработчика
+            function toggleLegend() {
+                setCookie('legendModeState', +this.checked, 300);
+                autobidderChart.options.plugins.legend.display = this.checked;
+                autobidderChart.update();
+            }
+            // Удаляем обработчик события
+            toggleLegendCheckbox.removeEventListener('change', toggleLegend);
+            // Добавляем событие для изменения состояния чекбокса
+            toggleLegendCheckbox.addEventListener('change', toggleLegend);
         }
-    });
-    // Логика для управления видимостью легенды через чекбокс
-    const toggleLegendCheckbox = document.getElementById('toggleLegendButton');
-    if(toggleLegendCheckbox){
-        toggleLegendCheckbox.checked = getCookie('legendModeState');
-        // Определяем функцию обработчика
-        function toggleLegend() {
-            setCookie('legendModeState', +this.checked, 300);
-            autobidderChart.options.plugins.legend.display = this.checked;
-            autobidderChart.update();
-        }
-        // Удаляем обработчик события
-        toggleLegendCheckbox.removeEventListener('change', toggleLegend);
-        // Добавляем событие для изменения состояния чекбокса
-        toggleLegendCheckbox.addEventListener('change', toggleLegend);
+
+        restoreLegendVisibility(autobidderChart);
     }
 
-    restoreLegendVisibility(autobidderChart);
-}
 
+    function loadCharts() {
+        updateChart();
+    }
 
-function loadCharts() {
-    updateChart();
-}
-
-$('#ab_monitor').find('select, input').on('change', function () {
-    if(this.dataset.ignore_me) return;
-    loadCharts();
-});
-let chartUpdaterInProgress = false;
-setInterval(() => {
-    if ($('#auto_update_switch').is(':checked')) {
-        if (chartUpdaterInProgress) return true;
-        chartUpdaterInProgress = true;
+    $('#ab_monitor').find('select, input').on('change', function () {
+        if(this.dataset.ignore_me) return;
         loadCharts();
-        chartUpdaterInProgress = false;
-    }
-}, 10000);
+    });
+    let chartUpdaterInProgress = false;
+    setInterval(() => {
+        if ($('#auto_update_switch').is(':checked')) {
+            if (chartUpdaterInProgress) return true;
+            chartUpdaterInProgress = true;
+            loadCharts();
+            chartUpdaterInProgress = false;
+        }
+    }, 10000);
 
-let autoSwitcherEnabled = false; // установить в true для автовыключения переключателя
-let autoUpdateTimer = null;
-let inactivityTimer = null;
+    let autoSwitcherEnabled = false; // установить в true для автовыключения переключателя
+    let autoUpdateTimer = null;
+    let inactivityTimer = null;
 
-// Функция для сброса таймера бездействия
-function resetInactivityTimer() {
-    if(!autoSwitcherEnabled){
-        return;
-    }
-    if (inactivityTimer) {
-        clearTimeout(inactivityTimer);
-    }
-    // Устанавливаем таймер на 10 минут (10 * 60 * 1000 миллисекунд)
-    inactivityTimer = setTimeout(() => {
-        // Выключаем чекбокс через 10 минут бездействия
-        $('#auto_update_switch').prop('checked', false);
-        clearTimeout(autoUpdateTimer); // Очищаем таймер автообновления
-    }, 10 * 60 * 1000);
-}
-
-// Инициализация обработчиков для сброса таймера при активности
-$(document).on('mousemove keydown', function () {
-    resetInactivityTimer();
-});
-
-$('#auto_update_switch').on('change', function () {
-    if ($(this).is(':checked')) {
+    // Функция для сброса таймера бездействия
+    function resetInactivityTimer() {
         if(!autoSwitcherEnabled){
             return;
         }
-        // При включении чекбокса, начинаем отслеживать бездействие
-        resetInactivityTimer();
-
-        if (autoUpdateTimer) {
-            clearTimeout(autoUpdateTimer);
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
         }
-
-        // Выключаем автообновление через 10 минут (независимо от активности)
-        autoUpdateTimer = setTimeout(() => {
+        // Устанавливаем таймер на 10 минут (10 * 60 * 1000 миллисекунд)
+        inactivityTimer = setTimeout(() => {
+            // Выключаем чекбокс через 10 минут бездействия
             $('#auto_update_switch').prop('checked', false);
-        }, 10 * 60000);
-    } else {
-        // Останавливаем все таймеры при выключении чекбокса
-        clearTimeout(autoUpdateTimer);
-        clearTimeout(inactivityTimer);
+            clearTimeout(autoUpdateTimer); // Очищаем таймер автообновления
+        }, 10 * 60 * 1000);
     }
-});
+
+    // Инициализация обработчиков для сброса таймера при активности
+    $(document).on('mousemove keydown', function () {
+        resetInactivityTimer();
+    });
+
+    $('#auto_update_switch').on('change', function () {
+        if ($(this).is(':checked')) {
+            if(!autoSwitcherEnabled){
+                return;
+            }
+            // При включении чекбокса, начинаем отслеживать бездействие
+            resetInactivityTimer();
+
+            if (autoUpdateTimer) {
+                clearTimeout(autoUpdateTimer);
+            }
+
+            // Выключаем автообновление через 10 минут (независимо от активности)
+            autoUpdateTimer = setTimeout(() => {
+                $('#auto_update_switch').prop('checked', false);
+            }, 10 * 60000);
+        } else {
+            // Останавливаем все таймеры при выключении чекбокса
+            clearTimeout(autoUpdateTimer);
+            clearTimeout(inactivityTimer);
+        }
+    });
 
 
 </script>
