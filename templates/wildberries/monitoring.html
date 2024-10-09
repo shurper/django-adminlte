@@ -394,28 +394,28 @@
 
     function updateWidgetData(data) {
         try {
-            document.getElementById('expenses_count').textContent = data[5][4].data.getLastElementMoreThenNull().toLocaleString();  // Затраты
+            document.getElementById('expenses_count').textContent = data.datasets[5][4].data.getLastElementMoreThenNull().toLocaleString();  // Затраты
         } catch (error) {
             console.error('Ошибка при обновлении затрат:', error);
             //document.getElementById('expenses_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('impressions_count').textContent = data[5][0].data.getLastElementMoreThenNull().toLocaleString();  // Показы
+            document.getElementById('impressions_count').textContent = data.datasets[5][0].data.getLastElementMoreThenNull().toLocaleString();  // Показы
         } catch (error) {
             console.error('Ошибка при обновлении показов:', error);
             //document.getElementById('impressions_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('clicks_count').textContent = data[5][1].data.getLastElementMoreThenNull().toLocaleString();  // Клики
+            document.getElementById('clicks_count').textContent = data.datasets[5][1].data.getLastElementMoreThenNull().toLocaleString();  // Клики
         } catch (error) {
             console.error('Ошибка при обновлении кликов:', error);
             //document.getElementById('clicks_count').textContent = '--';  // Значение по умолчанию
         }
 
         try {
-            document.getElementById('orders_count').textContent = data[5][6].data.getLastElementMoreThenNull().toLocaleString();  // Заказы
+            document.getElementById('orders_count').textContent = data.datasets[5][6].data.getLastElementMoreThenNull().toLocaleString();  // Заказы
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
             //document.getElementById('orders_count').textContent = '--';  // Значение по умолчанию
