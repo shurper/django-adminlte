@@ -404,10 +404,8 @@
         function formatNumber(value) {
             const numberValue = parseFloat(value);
             if (!isNaN(numberValue)) {
-                if (Number.isInteger(numberValue)) {
-                    return numberValue.toLocaleString();
-                }
-                return numberValue.toFixed(2).toLocaleString();
+                const roundedValue = Math.round(numberValue);  // Округляем до ближайшего целого
+                return roundedValue.toLocaleString();  // Возвращаем в виде строк с разделителями
             }
             return value;
         }
@@ -421,7 +419,7 @@
 
             element.textContent = formatNumber(newValue);
 
-            if (previousValue === null || isNaN(previousValue) || isNaN(newValue) || previousValue == previousValue) {
+            if (previousValue === null || isNaN(previousValue) || isNaN(newValue) || previousValue == newValue) {
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
                 parent.classList.add('bg-info');
             } else if (currentClassList.includes('bg-info') && newValue < previousValue) {
