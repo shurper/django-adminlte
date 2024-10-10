@@ -392,13 +392,15 @@
         return 0;  // Возвращаем 0, если все элементы либо 0, либо null
     };
 
-    function updateWidgetData(data) {
-        const previousValues = {
+
+    const previousValues = {
             expenses: null,
             impressions: null,
             clicks: null,
             orders: null,
         };
+    function updateWidgetData(data) {
+
         function formatNumber(value) {
             const numberValue = parseFloat(value);
             if (!isNaN(numberValue)) {
