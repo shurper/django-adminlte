@@ -393,6 +393,12 @@
     };
 
     function updateWidgetData(data) {
+        const previousValues = {
+            expenses: null,
+            impressions: null,
+            clicks: null,
+            orders: null,
+        };
         function formatNumber(value) {
             const numberValue = parseFloat(value);
             if (!isNaN(numberValue)) {
