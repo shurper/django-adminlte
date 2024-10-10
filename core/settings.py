@@ -271,10 +271,6 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'wildberries.tasks.collect_auto_campaign_statistics',
         'schedule': 60.0,
     },
-    'run-autobidder': {
-        'task': 'wildberries.tasks.run_autobidder',
-        'schedule': 20.0,
-    },
     'run-monitoring': {
         'task': 'wildberries.tasks.run_monitoring',
         'schedule': 20.0,

@@ -6,6 +6,7 @@ from celery import shared_task
 
 from django.utils import timezone
 import requests
+from typing_extensions import deprecated
 
 logger = logging.getLogger('celery_tasks')
 
@@ -73,7 +74,7 @@ def collect_auto_campaign_statistics():
     for store in active_stores:
         save_auto_campaign_statistics(store)
 
-
+@deprecated
 @shared_task
 def run_autobidder():
     print("run_autobidder is started")
@@ -176,8 +177,7 @@ def run_monitoring():
             continue
 
         combined_keywords = autobidder.get_monitoring_words()
-        print("combined_keywords")
-        print(combined_keywords)
+
         for keyword in combined_keywords:
             for destination in autobidder.destinations_monitoring:
                 # Try to retrieve an existing task in 'request' status
@@ -207,6 +207,12 @@ def run_monitoring():
 
                 if task.actual_position is not None:
                     from .models import AutoBidderLog
+                    from .utils import update_bid
+                    new_bid = None
+                    if autobidder.keyword == keyword and is_within_schedule(autobidder, now):
+                        new_bid = determine_new_bid(autobidder, task.actual_position)
+                        update_bid(autobidder, new_bid)
+
                     product_price = task.watcher_data.get('price_data') and task.watcher_data['price_data'].get('total',
                                                                                                                 None)
                     AutoBidderLog.objects.create(

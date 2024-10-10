@@ -393,12 +393,13 @@
 
     function updateWidgetData(data) {
         function formatNumber(value) {
-            // Проверка на число
-            if (typeof value === 'number') {
-                // Если значение дробное, округляем до 2 знаков после запятой
-                return Number.isInteger(value) ? value.toLocaleString() : value.toFixed(2).toLocaleString();
+            const numberValue = parseFloat(value);
+            if (!isNaN(numberValue)) {
+                if (Number.isInteger(numberValue)) {
+                    return numberValue.toLocaleString();
+                }
+                return numberValue.toFixed(2).toLocaleString();
             }
-            // Возвращаем исходное значение, если оно не число
             return value;
         }
 
@@ -430,9 +431,6 @@
             console.error('Ошибка при обновлении заказов:', error);
         }
     }
-
-
-
 
     function renderChart(data) {
         const ctx = document.getElementById('autobidderChart').getContext('2d');

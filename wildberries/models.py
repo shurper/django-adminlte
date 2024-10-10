@@ -844,8 +844,17 @@ class AutoBidderSettings(models.Model):
     def get_monitoring_words(self):
         keywords_monitoring = self.keywords_monitoring or []
         keywords_monitoring_add = self.keywords_monitoring_add or []
+        keyword = self.keyword.strip().lower() if isinstance(self.keyword, str) and self.keyword.strip() else None
 
-        return list(set(kw.strip() for kw in keywords_monitoring + keywords_monitoring_add if isinstance(kw, str) and kw.strip()))
+        # Приводим слова к нижнему регистру, удаляем пустые строки и убираем дубли
+        result = list(set(kw.lower().strip() for kw in keywords_monitoring + keywords_monitoring_add if
+                          isinstance(kw, str) and kw.strip()))
+
+        # Если keyword не пустая, добавляем её на первое место
+        if keyword:
+            result.insert(0, keyword)
+
+        return result
 
     def save(self, *args, **kwargs):
         # Get the current instance before saving to compare
