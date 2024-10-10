@@ -417,49 +417,35 @@
             const element = document.getElementById(elementId);
             const parent = element.closest('.small-box');
 
-            // Сохраняем текущий класс
             const currentClassList = Array.from(parent.classList);
 
-            // Устанавливаем новое значение
             element.textContent = formatNumber(newValue);
 
-            // Сравниваем старое и новое значение
-            if (previousValue === null || isNaN(previousValue) || isNaN(newValue)) {
-                // Удаляем все раскрашивающие классы
+            if (previousValue === null || isNaN(previousValue) || isNaN(newValue) || previousValue == previousValue) {
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
-                // Если предыдущее значение отсутствует или не число, устанавливаем синий цвет
                 parent.classList.add('bg-info');
             } else if (currentClassList.includes('bg-info') && newValue < previousValue) {
-                // Удаляем все раскрашивающие классы
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
-                // Синий цвет, данные уменьшились -> желтый
                 parent.classList.add('bg-warning');
+            } else if (currentClassList.includes('bg-info') && newValue > previousValue) {
+                parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
+                parent.classList.add('bg-success');
             } else if (currentClassList.includes('bg-warning')) {
-                // Удаляем все раскрашивающие классы
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
                 if (newValue > previousValue) {
-                    // Желтый цвет, данные увеличились -> зеленый
                     parent.classList.add('bg-success');
                 } else {
-                    // Желтый цвет, данные уменьшились -> красный
                     parent.classList.add('bg-danger');
                 }
             } else if (currentClassList.includes('bg-danger')) {
-                // Удаляем все раскрашивающие классы
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
-                if (newValue < previousValue) {
-                    // Красный цвет, данные уменьшились -> остаемся красным
-                    parent.classList.add('bg-danger');
-                } else {
-                    // Красный цвет, данные увеличились -> зеленый
+                if (newValue > previousValue) {
                     parent.classList.add('bg-success');
                 }
             } else if (currentClassList.includes('bg-success')) {
-                // Удаляем все раскрашивающие классы
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
-                if (newValue > previousValue) {
-                    // Зеленый цвет, данные увеличились -> остаемся зеленым
-                    parent.classList.add('bg-success');
+                if (newValue < previousValue) {
+                    parent.classList.add('bg-warning');
                 }
             }
         }
