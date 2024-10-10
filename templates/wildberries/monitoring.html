@@ -176,11 +176,12 @@
                     </div>
                     <div class="card-footer">
                         <button type="submit" name="create_settings" class="btn btn-success">Сохранить</button>
-                        <a class="btn btn-primary right"
-                           href="{% url 'monitoring_additional_words_view' campaign.id %}">Управление ключевыми
-                            фразами</a>
-                        <a class="btn btn-primary right" href="{% url 'keywords_monitoring_view' campaign.id %}">Мониторинг
-                            ключевых фраз</a>
+                        <a class="btn btn-primary right" href="{% url 'monitoring_additional_words_view' campaign.id %}">
+                            Управление ключевыми фразами
+                        </a>
+                        <a class="btn btn-primary right" href="{% url 'keywords_monitoring_view' campaign.id %}">
+                            Мониторинг ключевых фраз
+                        </a>
                     </div>
                 </form>
             </div>
@@ -403,30 +404,79 @@
             return value;
         }
 
+        // Функция для обновления значений и классов
+        function updateValueAndClass(elementId, newValue, previousValue) {
+            const element = document.getElementById(elementId);
+            const parent = element.closest('.small-box');
+
+            // Сохраняем текущий класс
+            const currentClassList = Array.from(parent.classList);
+
+            // Удаляем все раскрашивающие классы
+            parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
+
+            // Устанавливаем новое значение
+            element.textContent = formatNumber(newValue);
+
+            // Сравниваем старое и новое значение
+            if (previousValue === null || isNaN(previousValue) || isNaN(newValue)) {
+                // Если предыдущее значение отсутствует или не число, устанавливаем синий цвет
+                parent.classList.add('bg-info');
+            } else if (currentClassList.includes('bg-info') && newValue < previousValue) {
+                // Синий цвет, данные уменьшились -> желтый
+                parent.classList.add('bg-warning');
+            } else if (currentClassList.includes('bg-warning')) {
+                if (newValue > previousValue) {
+                    // Желтый цвет, данные увеличились -> зеленый
+                    parent.classList.add('bg-success');
+                } else {
+                    // Желтый цвет, данные уменьшились -> красный
+                    parent.classList.add('bg-danger');
+                }
+            } else if (currentClassList.includes('bg-danger')) {
+                if (newValue < previousValue) {
+                    // Красный цвет, данные уменьшились -> остаемся красным
+                    parent.classList.add('bg-danger');
+                } else {
+                    // Красный цвет, данные увеличились -> зеленый
+                    parent.classList.add('bg-success');
+                }
+            } else if (currentClassList.includes('bg-success')) {
+                if (newValue > previousValue) {
+                    // Зеленый цвет, данные увеличились -> остаемся зеленым
+                    parent.classList.add('bg-success');
+                }
+            }
+        }
+
         try {
             const expenses = data.datasets[5][4].data.getLastElementMoreThenNull();
-            document.getElementById('expenses_count').textContent = formatNumber(expenses);  // Затраты
+            updateValueAndClass('expenses_count', expenses, previousValues.expenses);
+            previousValues.expenses = expenses;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении затрат:', error);
         }
 
         try {
             const impressions = data.datasets[5][0].data.getLastElementMoreThenNull();
-            document.getElementById('impressions_count').textContent = formatNumber(impressions);  // Показы
+            updateValueAndClass('impressions_count', impressions, previousValues.impressions);
+            previousValues.impressions = impressions;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении показов:', error);
         }
 
         try {
             const clicks = data.datasets[5][1].data.getLastElementMoreThenNull();
-            document.getElementById('clicks_count').textContent = formatNumber(clicks);  // Клики
+            updateValueAndClass('clicks_count', clicks, previousValues.clicks);
+            previousValues.clicks = clicks;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении кликов:', error);
         }
 
         try {
             const orders = data.datasets[5][6].data.getLastElementMoreThenNull();
-            document.getElementById('orders_count').textContent = formatNumber(orders);  // Заказы
+            updateValueAndClass('orders_count', orders, previousValues.orders);
+            previousValues.orders = orders;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
         }
