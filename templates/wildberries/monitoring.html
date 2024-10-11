@@ -448,7 +448,7 @@
 
     Array.prototype.getLastElementMoreThenNull = function() {
         for (let i = this.length - 1; i >= 0; i--) {
-            if (this[i] !== null && this[i] !== 0) {
+            if (this[i] !== null && this[i] > 0) {
                 return this[i];
             }
         }
