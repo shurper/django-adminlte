@@ -213,7 +213,7 @@ def save_campaign_statistics(store):
     campaigns = Campaign.objects.filter(store=store)
     advert_ids = [campaign.advert_id for campaign in campaigns]
     statistics = get_campaign_statistics(store, advert_ids)
-    # print(statistics)
+
     if statistics:
         for stat in statistics:
             campaign = Campaign.objects.get(advert_id=stat['advertId'])

@@ -122,6 +122,69 @@
                     <!-- ./col -->
                 </div>
 
+                <div class="row">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3><span id="expenses_count_speed">--</span><sup style="font-size: 20px">&nbsp;₽</sup></h3>
+                                <p>СКОРОСТЬ ЗАТРАТ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-bag"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3><span id="impressions_count_speed">--</span><sup style="font-size: 20px"></sup></h3>
+
+                                <p>СКОРОСТЬ ПОКАЗОВ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-stats-bars"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    <div class="col-lg-3 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-warning">
+                            <div class="inner">
+                                <h3><span id="clicks_count_speed">--</span><sup style="font-size: 20px"></sup></h3>
+
+                                <p>СКОРОСТЬ КЛИКОВ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-person-add"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                    <div class="col-lg-3 col-6">
+                        <!-- small box -->
+                        <div class="small-box bg-danger">
+                            <div class="inner">
+                                <h3><span id="orders_count_speed">--</span><sup style="font-size: 20px"></sup></h3>
+
+                                <p>СКОРОСТЬ ЗАКАЗОВ</p>
+                            </div>
+                            <div class="icon">
+                                <i class="ion ion-pie-graph"></i>
+                            </div>
+                            <a href="#" class="small-box-footer">Больше информации <i
+                                    class="fas fa-arrow-circle-right"></i></a>
+                        </div>
+                    </div>
+                    <!-- ./col -->
+                </div>
+
 
                 <div class="form-group">
                     <div style=" overflow-x: auto;">
@@ -373,7 +436,7 @@
 
                         dataCache[cacheKey] = data;
                         renderChart(data);
-                        updateWidgetData(data);
+                        updateWidgetData(data, timeInterval);
                     },
                     error: function (xhr, status, error) {
                         console.error('AJAX error:', status, error);
@@ -398,8 +461,50 @@
             impressions: null,
             clicks: null,
             orders: null,
+            expenses_speed: null,
+            impressions_speed: null,
+            clicks_speed: null,
+            orders_speed: null,
+
         };
-    function updateWidgetData(data) {
+    function updateWidgetData(data, current_interval = '5m') {
+
+        function getRateOfChange(values, interval) {
+            // Конвертация интервала в минуты
+            const intervalInMinutes = convertIntervalToMinutes(interval);
+
+            // Массив для хранения скоростей изменения
+            const rateOfChange = [];
+
+            // Вычисляем изменение значений между каждым измерением
+            for (let i = 1; i < values.length; i++) {
+                // Разница между текущим и предыдущим значением
+                const difference = values[i] - values[i - 1];
+
+                // Скорость изменения за 1 единицу времени (например, минуту)
+                const rate = difference / intervalInMinutes;
+
+                // Добавляем скорость в массив
+                rateOfChange.push(rate);
+            }
+
+            return rateOfChange;
+        }
+
+        // Вспомогательная функция для конвертации интервалов в минуты
+        function convertIntervalToMinutes(interval) {
+            const unitsToMinutes = {
+                '5m': 5,
+                '15m': 15,
+                '1h': 60,
+                '4h': 240,
+                '1d': 1440,  // 24 * 60
+                '1w': 10080, // 7 * 24 * 60
+                '1M': 43200  // 30 * 24 * 60 (примерное значение для месяца)
+            };
+
+            return unitsToMinutes[interval] || 1;
+        }
 
         function formatNumber(value) {
             const numberValue = parseFloat(value);
@@ -479,6 +584,40 @@
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
         }
+        //////////
+        try {
+            const expenses_speed = getRateOfChange(data.datasets[5][4].data, current_interval).getLastElementMoreThenNull();
+            updateValueAndClass('expenses_count_speed', expenses_speed, previousValues.expenses_speed);
+            previousValues.expenses_speed = expenses_speed;  // Сохраняем текущее значение
+        } catch (error) {
+            console.error('Ошибка при обновлении затрат_speed:', error);
+        }
+
+        try {
+            const impressions_speed = getRateOfChange(data.datasets[5][0].data, current_interval).getLastElementMoreThenNull();
+            updateValueAndClass('impressions_count_speed', impressions_speed, previousValues.impressions_speed);
+            previousValues.impressions_speed = impressions_speed;  // Сохраняем текущее значение
+        } catch (error) {
+            console.error('Ошибка при обновлении показов_speed:', error);
+        }
+
+        try {
+            const clicks_speed = getRateOfChange(data.datasets[5][1].data, current_interval).getLastElementMoreThenNull();
+            updateValueAndClass('clicks_count_speed', clicks_speed, previousValues.clicks_speed);
+            previousValues.clicks_speed = clicks_speed;  // Сохраняем текущее значение
+        } catch (error) {
+            console.error('Ошибка при обновлении кликов_speed:', error);
+        }
+
+        try {
+            const orders_speed = getRateOfChange(data.datasets[5][6].data, current_interval).getLastElementMoreThenNull();
+            updateValueAndClass('orders_count_speed', orders_speed, previousValues.orders_speed);
+            previousValues.orders_speed = orders_speed;  // Сохраняем текущее значение
+        } catch (error) {
+            console.error('Ошибка при обновлении заказов_speed:', error);
+        }
+
+
     }
 
     function renderChart(data) {
