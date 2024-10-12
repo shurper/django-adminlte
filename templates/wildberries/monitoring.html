@@ -446,14 +446,39 @@
         }
     }
 
-    Array.prototype.getLastElementMoreThenNull = function() {
-        for (let i = this.length - 1; i >= 0; i--) {
+    Array.prototype.getLastElementMoreThanNull = function(stopIndex = 0) {
+
+        for (let i = this.length - 1; i >= stopIndex; i--) {
             if (this[i] !== null && this[i] > 0) {
                 return this[i];
             }
         }
-        return 0;  // Возвращаем 0, если все элементы либо 0, либо null
+        return 0;  // Если ничего не найдено, возвращаем 0
     };
+
+    function findEarliestTodayIndex(datesArray) {
+        if (!Array.isArray(datesArray)) {
+            console.error("Входной параметр должен быть массивом.");
+            dateArray = [];
+        }
+        const today = new Date();
+
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < datesArray.length; i++) {
+            const currentDate = new Date(datesArray[i]);
+
+            const checkDate = new Date(currentDate);
+            checkDate.setHours(0, 0, 0, 0);
+
+            if (checkDate.getTime() === today.getTime()) {
+                return i;  // Возвращаем индекс самой ранней даты на сегодня
+            }
+        }
+
+        return 0;
+    }
+
 
 
     const previousValues = {
@@ -467,7 +492,7 @@
             orders_speed: null,
 
         };
-    function updateWidgetData(data, current_interval = '5m') {
+    function updateWidgetData(data, current_interval = '5m', speed_interval = 60) {  // speed_interval = 60 - per hour
 
         function getRateOfChange(values, interval) {
             // Конвертация интервала в минуты
@@ -482,7 +507,7 @@
                 const difference = values[i] - values[i - 1];
 
                 // Скорость изменения за 1 единицу времени (например, минуту)
-                const rate = difference / intervalInMinutes;
+                const rate = speed_interval * difference / intervalInMinutes;
 
                 // Добавляем скорость в массив
                 rateOfChange.push(rate);
@@ -500,29 +525,38 @@
                 '4h': 240,
                 '1d': 1440,  // 24 * 60
                 '1w': 10080, // 7 * 24 * 60
-                '1M': 43200  // 30 * 24 * 60 (примерное значение для месяца)
             };
 
             return unitsToMinutes[interval] || 1;
         }
 
-        function formatNumber(value) {
+        function formatNumber(value, precision = 0) {
             const numberValue = parseFloat(value);
             if (!isNaN(numberValue)) {
-                const roundedValue = Math.round(numberValue);  // Округляем до ближайшего целого
-                return roundedValue.toLocaleString();  // Возвращаем в виде строк с разделителями
+                let roundedValue;
+
+                // Если precision < 0 и число меньше или равно абсолютному значению precision
+                if (precision < 0 && numberValue <= Math.abs(precision)) {
+                    roundedValue = numberValue.toFixed(2);  // Округляем до двух знаков после запятой
+                } else {
+                    roundedValue = numberValue.toFixed(precision);  // Округляем до указанной точности
+                }
+
+                // Преобразуем в строку с разделителями для тысяч
+                return parseFloat(roundedValue).toLocaleString();
             }
-            return value;
+            return value;  // Возвращаем исходное значение, если оно не число
         }
 
+
         // Функция для обновления значений и классов
-        function updateValueAndClass(elementId, newValue, previousValue) {
+        function updateValueAndClass(elementId, newValue, previousValue, precision = 0) {
             const element = document.getElementById(elementId);
             const parent = element.closest('.small-box');
 
             const currentClassList = Array.from(parent.classList);
 
-            element.textContent = formatNumber(newValue);
+            element.textContent = formatNumber(newValue, precision);
 
             if (previousValue === null || isNaN(previousValue) || isNaN(newValue) || previousValue == newValue) {
                 parent.classList.remove('bg-info', 'bg-success', 'bg-warning', 'bg-danger');
@@ -553,65 +587,68 @@
             }
         }
 
+
         try {
-            const expenses = data.datasets[5][4].data.getLastElementMoreThenNull();
-            updateValueAndClass('expenses_count', expenses, previousValues.expenses);
+            const stopIndex = findEarliestTodayIndex(data.labels)
+
+            const expenses = data.datasets[5][4].data.getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('expenses_count', expenses, previousValues.expenses, -100);
             previousValues.expenses = expenses;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении затрат:', error);
         }
 
         try {
-            const impressions = data.datasets[5][0].data.getLastElementMoreThenNull();
-            updateValueAndClass('impressions_count', impressions, previousValues.impressions);
+            const impressions = data.datasets[5][0].data.getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('impressions_count', impressions, previousValues.impressions, 0);
             previousValues.impressions = impressions;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении показов:', error);
         }
 
         try {
-            const clicks = data.datasets[5][1].data.getLastElementMoreThenNull();
-            updateValueAndClass('clicks_count', clicks, previousValues.clicks);
+            const clicks = data.datasets[5][1].data.getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('clicks_count', clicks, previousValues.clicks, 0);
             previousValues.clicks = clicks;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении кликов:', error);
         }
 
         try {
-            const orders = data.datasets[5][6].data.getLastElementMoreThenNull();
-            updateValueAndClass('orders_count', orders, previousValues.orders);
+            const orders = data.datasets[5][6].data.getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('orders_count', orders, previousValues.orders, 0);
             previousValues.orders = orders;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении заказов:', error);
         }
         //////////
         try {
-            const expenses_speed = getRateOfChange(data.datasets[5][4].data, current_interval).getLastElementMoreThenNull();
-            updateValueAndClass('expenses_count_speed', expenses_speed, previousValues.expenses_speed);
+            const expenses_speed = getRateOfChange(data.datasets[5][4].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('expenses_count_speed', expenses_speed, previousValues.expenses_speed, -10);
             previousValues.expenses_speed = expenses_speed;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении затрат_speed:', error);
         }
 
         try {
-            const impressions_speed = getRateOfChange(data.datasets[5][0].data, current_interval).getLastElementMoreThenNull();
-            updateValueAndClass('impressions_count_speed', impressions_speed, previousValues.impressions_speed);
+            const impressions_speed = getRateOfChange(data.datasets[5][0].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('impressions_count_speed', impressions_speed, previousValues.impressions_speed, -1);
             previousValues.impressions_speed = impressions_speed;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении показов_speed:', error);
         }
 
         try {
-            const clicks_speed = getRateOfChange(data.datasets[5][1].data, current_interval).getLastElementMoreThenNull();
-            updateValueAndClass('clicks_count_speed', clicks_speed, previousValues.clicks_speed);
+            const clicks_speed = getRateOfChange(data.datasets[5][1].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('clicks_count_speed', clicks_speed, previousValues.clicks_speed, -1);
             previousValues.clicks_speed = clicks_speed;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении кликов_speed:', error);
         }
 
         try {
-            const orders_speed = getRateOfChange(data.datasets[5][6].data, current_interval).getLastElementMoreThenNull();
-            updateValueAndClass('orders_count_speed', orders_speed, previousValues.orders_speed);
+            const orders_speed = getRateOfChange(data.datasets[5][6].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            updateValueAndClass('orders_count_speed', orders_speed, previousValues.orders_speed, -1);
             previousValues.orders_speed = orders_speed;  // Сохраняем текущее значение
         } catch (error) {
             console.error('Ошибка при обновлении заказов_speed:', error);
