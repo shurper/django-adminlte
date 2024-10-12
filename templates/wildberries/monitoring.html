@@ -539,7 +539,7 @@
                 if (precision < 0 && numberValue <= Math.abs(precision)) {
                     roundedValue = numberValue.toFixed(2);  // Округляем до двух знаков после запятой
                 } else {
-                    roundedValue = numberValue.toFixed(precision);  // Округляем до указанной точности
+                    roundedValue = numberValue.toFixed(precision < 0 ? 2 : precision);  // Округляем до указанной точности
                 }
 
                 // Преобразуем в строку с разделителями для тысяч
@@ -587,10 +587,9 @@
             }
         }
 
+        const stopIndex = findEarliestTodayIndex(data.labels);
 
         try {
-            const stopIndex = findEarliestTodayIndex(data.labels)
-
             const expenses = data.datasets[5][4].data.getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('expenses_count', expenses, previousValues.expenses, -100);
             previousValues.expenses = expenses;  // Сохраняем текущее значение
