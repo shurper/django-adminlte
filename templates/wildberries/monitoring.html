@@ -591,7 +591,7 @@
         try {
             const stopIndex = findEarliestTodayIndex(data.labels)
 
-            const expenses = data.datasets[5][4].data.getLastElementMoreThenNull(stopIndex);
+            const expenses = data.datasets[5][4].data.getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('expenses_count', expenses, previousValues.expenses, -100);
             previousValues.expenses = expenses;  // Сохраняем текущее значение
         } catch (error) {
@@ -599,7 +599,7 @@
         }
 
         try {
-            const impressions = data.datasets[5][0].data.getLastElementMoreThenNull(stopIndex);
+            const impressions = data.datasets[5][0].data.getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('impressions_count', impressions, previousValues.impressions, 0);
             previousValues.impressions = impressions;  // Сохраняем текущее значение
         } catch (error) {
@@ -607,7 +607,7 @@
         }
 
         try {
-            const clicks = data.datasets[5][1].data.getLastElementMoreThenNull(stopIndex);
+            const clicks = data.datasets[5][1].data.getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('clicks_count', clicks, previousValues.clicks, 0);
             previousValues.clicks = clicks;  // Сохраняем текущее значение
         } catch (error) {
@@ -615,7 +615,7 @@
         }
 
         try {
-            const orders = data.datasets[5][6].data.getLastElementMoreThenNull(stopIndex);
+            const orders = data.datasets[5][6].data.getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('orders_count', orders, previousValues.orders, 0);
             previousValues.orders = orders;  // Сохраняем текущее значение
         } catch (error) {
@@ -623,7 +623,7 @@
         }
         //////////
         try {
-            const expenses_speed = getRateOfChange(data.datasets[5][4].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            const expenses_speed = getRateOfChange(data.datasets[5][4].data, current_interval).getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('expenses_count_speed', expenses_speed, previousValues.expenses_speed, -10);
             previousValues.expenses_speed = expenses_speed;  // Сохраняем текущее значение
         } catch (error) {
@@ -631,7 +631,7 @@
         }
 
         try {
-            const impressions_speed = getRateOfChange(data.datasets[5][0].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            const impressions_speed = getRateOfChange(data.datasets[5][0].data, current_interval).getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('impressions_count_speed', impressions_speed, previousValues.impressions_speed, -1);
             previousValues.impressions_speed = impressions_speed;  // Сохраняем текущее значение
         } catch (error) {
@@ -639,7 +639,7 @@
         }
 
         try {
-            const clicks_speed = getRateOfChange(data.datasets[5][1].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            const clicks_speed = getRateOfChange(data.datasets[5][1].data, current_interval).getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('clicks_count_speed', clicks_speed, previousValues.clicks_speed, -1);
             previousValues.clicks_speed = clicks_speed;  // Сохраняем текущее значение
         } catch (error) {
@@ -647,7 +647,7 @@
         }
 
         try {
-            const orders_speed = getRateOfChange(data.datasets[5][6].data, current_interval).getLastElementMoreThenNull(stopIndex);
+            const orders_speed = getRateOfChange(data.datasets[5][6].data, current_interval).getLastElementMoreThanNull(stopIndex);
             updateValueAndClass('orders_count_speed', orders_speed, previousValues.orders_speed, -1);
             previousValues.orders_speed = orders_speed;  // Сохраняем текущее значение
         } catch (error) {
