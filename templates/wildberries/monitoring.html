@@ -394,40 +394,46 @@
     }
 
     function calculateAverageData(inputData) {
-        const { labels, datasets } = inputData;
+      const { labels, datasets } = inputData;
 
-        // Результирующий массив с новыми усредненными датасетами
-        const averageDatasets = datasets.map((datasetGroup) => {
-          const numberOfLabels = labels.length;
-          const averagedData = [];
+      // Результирующий массив с новыми усредненными датасетами
+      const averageDatasets = datasets.map((datasetGroup, groupIndex) => {
+        const numberOfLabels = labels.length;
+        const averagedData = [];
 
-          for (let i = 0; i < numberOfLabels; i++) {
-            let sum = 0;
-            let count = 0;
+        // Для каждого времени (индекса) мы будем считать среднее для всех графиков в текущем наборе
+        for (let i = 0; i < numberOfLabels; i++) {
+          let sum = 0;
+          let count = 0;
 
-            // Итерируем по каждому графику в наборе
-            datasetGroup.forEach((dataset) => {
-              const value = dataset.data[i];
-              // Суммируем значения, игнорируя null
-              if (value !== null) {
-                sum += value;
-                count += 1;
-              }
-            });
+          // Итерируем по каждому графику в наборе
+          datasetGroup.forEach((dataset) => {
+            const value = dataset.data[i];
+            // Суммируем значения, игнорируя null
+            if (value !== null) {
+              sum += value;
+              count += 1;
+            }
+          });
 
-            averagedData.push(count > 0 ? sum / count : null);
-          }
+          // Добавляем усредненное значение (если count > 0)
+          averagedData.push(count > 0 ? sum / count : null);
+        }
 
-          return {
-            label: `Индекс`,
+        // Оборачиваем результат в массив, чтобы удовлетворять условию валидации
+        return [
+          {
+            label: `Среднее значение для группы ${groupIndex + 1}`,  // Название может быть произвольным
             data: averagedData
-          };
-        });
+          }
+        ];
+      });
 
-        return {
-          labels,
-          datasets: averageDatasets
-        };
+      // Возвращаем данные для построения нового графика
+      return {
+        labels,
+        datasets: averageDatasets
+      };
     }
 
 
