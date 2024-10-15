@@ -393,20 +393,20 @@
         }
     }
 
-    function calculateAverageData(inputData) {
+    function calculateAverageData(inputData, ignoredGroupIndices = []) {
       const { labels, datasets } = inputData;
 
-      // Результирующий массив с новыми усредненными датасетами
       const averageDatasets = datasets.map((datasetGroup, groupIndex) => {
+        if (ignoredGroupIndices.includes(groupIndex)) {
+            return datasetGroup;
+        }
         const numberOfLabels = labels.length;
         const averagedData = [];
 
-        // Для каждого времени (индекса) мы будем считать среднее для всех графиков в текущем наборе
         for (let i = 0; i < numberOfLabels; i++) {
           let sum = 0;
           let count = 0;
 
-          // Итерируем по каждому графику в наборе
           datasetGroup.forEach((dataset) => {
             const value = dataset.data[i];
             // Суммируем значения, игнорируя null
@@ -416,20 +416,17 @@
             }
           });
 
-          // Добавляем усредненное значение (если count > 0)
           averagedData.push(count > 0 ? sum / count : null);
         }
 
-        // Оборачиваем результат в массив, чтобы удовлетворять условию валидации
         return [
           {
-            label: `Среднее значение для группы ${groupIndex + 1}`,  // Название может быть произвольным
+            label: `Индекс`,
             data: averagedData
           }
         ];
       });
 
-      // Возвращаем данные для построения нового графика
       return {
         labels,
         datasets: averageDatasets
@@ -726,7 +723,7 @@
         const toggleIndexButton = document.getElementById('toggleIndexButton');
         if(toggleIndexButton){
             if (toggleIndexButton.checked){
-                data = calculateAverageData(data);
+                data = calculateAverageData(data, [5]);
             }
         }
 
