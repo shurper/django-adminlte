@@ -202,6 +202,11 @@
                                    data-ignore_me="1">
                             <label class="custom-control-label" for="toggleLegendButton">Отображать легенду</label>
                         </div>
+                        <div class="custom-control custom-switch col-3">
+                            <input type="checkbox" class="custom-control-input spinner" id="toggleIndexButton">
+                            <label class="custom-control-label" for="toggleIndexButton">Отображать Индекс</label>
+                        </div>
+
                     </div>
 
 
@@ -388,9 +393,46 @@
         }
     }
 
-    // Function to update the chart
-    let autobidderChart; // Глобальная переменная для хранения экземпляра графика
-    let statChart; // Глобальная переменная для хранения экземпляра графика
+    function calculateAverageData(inputData) {
+        const { labels, datasets } = inputData;
+
+        // Результирующий массив с новыми усредненными датасетами
+        const averageDatasets = datasets.map((datasetGroup) => {
+          const numberOfLabels = labels.length;
+          const averagedData = [];
+
+          for (let i = 0; i < numberOfLabels; i++) {
+            let sum = 0;
+            let count = 0;
+
+            // Итерируем по каждому графику в наборе
+            datasetGroup.forEach((dataset) => {
+              const value = dataset.data[i];
+              // Суммируем значения, игнорируя null
+              if (value !== null) {
+                sum += value;
+                count += 1;
+              }
+            });
+
+            averagedData.push(count > 0 ? sum / count : null);
+          }
+
+          return {
+            label: `Индекс`,
+            data: averagedData
+          };
+        });
+
+        return {
+          labels,
+          datasets: averageDatasets
+        };
+    }
+
+
+    let autobidderChart;
+    let statChart;
     let panTimeout = null;
 
     const dataCache = {};
@@ -673,6 +715,13 @@
         if (!data || !data.labels || !data.datasets) {
             console.error('Invalid data received from the server');
             return;
+        }
+
+        const toggleIndexButton = document.getElementById('toggleIndexButton');
+        if(toggleIndexButton){
+            if (toggleIndexButton.checked){
+                data = calculateAverageData(data);
+            }
         }
 
         const allDatasets = [];
