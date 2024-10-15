@@ -721,11 +721,35 @@
         }
 
         const toggleIndexButton = document.getElementById('toggleIndexButton');
-        if(toggleIndexButton){
-            if (toggleIndexButton.checked){
+        if (toggleIndexButton) {
+            // Получаем состояние из cookie и конвертируем в boolean
+            const indexModeState = getCookie('indexModeState') === '1'; // Предполагаем, что '1' означает true
+            toggleIndexButton.checked = indexModeState;
+
+            // Если кнопка включена, применяем усреднение с индексом 5
+            if (toggleIndexButton.checked) {
                 data = calculateAverageData(data, [5]);
             }
+
+            // Определяем функцию обработчика
+            function toggleIndex() {
+                const isChecked = this.checked;
+                // Сохраняем состояние переключателя в cookie (1 - true, 0 - false)
+                setCookie('indexModeState', isChecked ? 1 : 0, 300);
+
+                // Выполняем действия при изменении состояния, например, пересчитываем данные
+                if (isChecked) {
+                    data = calculateAverageData(data, [5]); // Пример: применяем игнорирование
+                } else {
+                    // Можете добавить другую логику, если состояние отключено
+                }
+            }
+
+            // Удаляем предыдущий обработчик (если есть) и добавляем новый
+            toggleIndexButton.removeEventListener('change', toggleIndex);
+            toggleIndexButton.addEventListener('change', toggleIndex);
         }
+
 
         const allDatasets = [];
         data.datasets.forEach((datasetGroup, groupIndex) => {
@@ -1000,17 +1024,23 @@
         });
         // Логика для управления видимостью легенды через чекбокс
         const toggleLegendCheckbox = document.getElementById('toggleLegendButton');
-        if(toggleLegendCheckbox){
-            toggleLegendCheckbox.checked = getCookie('legendModeState');
-            // Определяем функцию обработчика
+        if (toggleLegendCheckbox) {
+            const legendModeState = getCookie('legendModeState') === '1'; // '1' - включено
+            toggleLegendCheckbox.checked = legendModeState;
+
+            autobidderChart.options.plugins.legend.display = legendModeState;
+            autobidderChart.update();
+
             function toggleLegend() {
-                setCookie('legendModeState', +this.checked, 300);
-                autobidderChart.options.plugins.legend.display = this.checked;
+                const isChecked = this.checked;
+                setCookie('legendModeState', isChecked ? 1 : 0, 300);
+
+                // Обновляем опции графика
+                autobidderChart.options.plugins.legend.display = isChecked;
                 autobidderChart.update();
             }
-            // Удаляем обработчик события
+
             toggleLegendCheckbox.removeEventListener('change', toggleLegend);
-            // Добавляем событие для изменения состояния чекбокса
             toggleLegendCheckbox.addEventListener('change', toggleLegend);
         }
 
