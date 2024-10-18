@@ -717,6 +717,9 @@ class CampaignStatistic(models.Model):
     cr = models.FloatField()
     shks = models.IntegerField()
     sum_price = models.DecimalField(max_digits=10, decimal_places=2)
+    views_per_minute = models.FloatField(null=True, blank=True)
+    clicks_per_minute = models.FloatField(null=True, blank=True)
+    sum_per_minute = models.FloatField(null=True, blank=True)
 
     def current_user_has_access(self, request):
         return self.campaign.store.user == request.user

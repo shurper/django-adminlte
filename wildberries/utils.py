@@ -217,7 +217,10 @@ def save_campaign_statistics(store):
     if statistics:
         for stat in statistics:
             campaign = Campaign.objects.get(advert_id=stat['advertId'])
-            campaign_stat = CampaignStatistic.objects.create(
+
+            previous_stat = CampaignStatistic.objects.filter(campaign=campaign).order_by('-date').first()
+
+            campaign_stat = CampaignStatistic(
                 campaign=campaign,
                 date=timezone.now(),
                 views=stat['views'],
@@ -231,6 +234,16 @@ def save_campaign_statistics(store):
                 shks=stat['shks'],
                 sum_price=stat['sum_price']
             )
+
+            if previous_stat:
+                time_diff = (campaign_stat.date - previous_stat.date).total_seconds() / 60  # разница в минутах
+
+                if time_diff > 0:
+                    campaign_stat.views_per_minute = (campaign_stat.views - previous_stat.views) / time_diff
+                    campaign_stat.clicks_per_minute = (campaign_stat.clicks - previous_stat.clicks) / time_diff
+                    campaign_stat.sum_per_minute = (campaign_stat.sum - previous_stat.sum) / time_diff
+
+            campaign_stat.save()
 
             for platform in stat['days'][0]['apps']:
                 if platform['appType'] == 0: continue
