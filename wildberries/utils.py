@@ -239,9 +239,9 @@ def save_campaign_statistics(store):
                 time_diff = (campaign_stat.date - previous_stat.date).total_seconds() / 60  # разница в минутах
 
                 if time_diff > 0:
-                    campaign_stat.views_per_minute = (campaign_stat.views - previous_stat.views) / time_diff
-                    campaign_stat.clicks_per_minute = (campaign_stat.clicks - previous_stat.clicks) / time_diff
-                    campaign_stat.sum_per_minute = (campaign_stat.sum - previous_stat.sum) / time_diff
+                    campaign_stat.views_per_minute = (float(campaign_stat.views) - float(previous_stat.views)) / time_diff
+                    campaign_stat.clicks_per_minute = (float(campaign_stat.clicks) - float(previous_stat.clicks)) / time_diff
+                    campaign_stat.sum_per_minute = (float(campaign_stat.sum) - float(previous_stat.sum)) / time_diff
 
             campaign_stat.save()
 
