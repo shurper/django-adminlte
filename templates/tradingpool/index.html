@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingPool Chart</title>
+    <style>
+        #chart {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <select id="timeframe" onchange="changeTimeframe()">
+    <option value="1">1 минута</option>
+    <option value="5">5 минут</option>
+    <option value="15">15 минут</option>
+    <option value="60">1 час</option>
+</select>
+</div>
+
+<div id="chart"></div>
+
+
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+        width: 1500,
+        height: 700,
+        layout: {
+            backgroundColor: '#ffffff',
+            textColor: '#000000',
+        },
+        grid: {
+            vertLines: {
+                color: '#e0e0e0',
+            },
+            horzLines: {
+                color: '#e0e0e0',
+            },
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+            borderColor: '#e0e0e0',
+        },
+        timeScale: {
+            borderColor: '#e0e0e0',
+            timeVisible: true,
+        }
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+    let socket;
+    let lastTimestamp = 0;  // Для хранения последней временной метки
+
+    function connectWebSocket() {
+        socket = new WebSocket('ws://' + window.location.host + '/ws/candles/');
+        const timeframe = document.getElementById('timeframe').value;
+
+        socket.onopen = function() {
+            console.log('WebSocket соединение установлено');
+            socket.send(JSON.stringify({ timeframe: timeframe, last: lastTimestamp }));
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const candleData = data.candles.data;
+
+            // Проверяем наличие новых свечей
+            if (candleData && candleData.length > 0) {
+                const formattedData = candleData.map(item => ({
+                    time: item['start'] / 1000,  // Время в секундах
+                    open: parseFloat(item['open']),
+                    high: parseFloat(item['high']),
+                    low: parseFloat(item['low']),
+                    close: parseFloat(item['close']),
+                }));
+
+                // Добавляем только новые данные
+                addNewCandles(formattedData);
+            }
+        };
+
+        socket.onerror = function(error) {
+            console.log('Ошибка WebSocket:', error);
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket соединение закрыто');
+        };
+    }
+
+    function loadInitialData() {
+        const timeframe = document.getElementById('timeframe').value;
+        // Запрос начальных данных с сервера
+        fetch(`/tradingpool/api/candles/BTCUSDT/${timeframe}/${lastTimestamp}/`)
+            .then(response => response.json())
+            .then(data => {
+                const formattedData = data.map(item => ({
+                    time: item[0] / 1000,  // Время в секундах
+                    open: parseFloat(item[1]),
+                    high: parseFloat(item[2]),
+                    low: parseFloat(item[3]),
+                    close: parseFloat(item[4]),
+                }));
+
+                candleSeries.setData(formattedData);
+                lastTimestamp = formattedData[formattedData.length - 1].time;  // Устанавливаем последнюю временную метку
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ timeframe: timeframe, last: lastTimestamp }));
+                } else {
+                    console.log("WebSocket ещё не открыт.");
+                    connectWebSocket();
+                }
+
+            })
+            .catch(error => console.error('Ошибка при загрузке начальных данных:', error));
+    }
+
+    function addNewCandles(newCandles) {
+        // Фильтруем новые свечи, чтобы добавить только те, которые новее последней временной метки
+        const filteredCandles = newCandles.filter(candle => candle.time >= lastTimestamp);
+
+        if (filteredCandles.length > 0) {
+            const timeframe = document.getElementById('timeframe').value;
+            candleSeries.update(filteredCandles[filteredCandles.length - 1]);
+            lastTimestamp = filteredCandles[filteredCandles.length - 1].time;  // Обновляем последнюю временную метку
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ timeframe: timeframe, last: lastTimestamp }));
+            } else {
+                console.log("WebSocket ещё не открыт.");
+                connectWebSocket();
+            }
+            //chart.timeScale().fitContent();
+        }
+    }
+
+    function changeTimeframe() {
+        const timeframe = document.getElementById('timeframe').value;
+        lastTimestamp = 0;
+        loadInitialData();
+        //if (socket.readyState === WebSocket.OPEN) {
+        //    socket.send(JSON.stringify({ timeframe: timeframe }));
+        //} else {
+        //    console.log("WebSocket ещё не открыт. Попробуйте позже.");
+        //}
+    }
+
+     changeTimeframe();  // Загрузка начальных данных
+
+</script>
+
+</body>
+</html>

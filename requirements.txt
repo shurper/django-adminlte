@@ -24,3 +24,19 @@ django_celery_beat
 django-cors-headers
 
 django_redis
+
+python-binance
+
+djangorestframework
+
+pybit
+
+channels
+
+channels-redis
+
+ccxt
+
+daphne
+
+djangorestframework-simplejwt

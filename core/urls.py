@@ -22,4 +22,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include('admin_adminlte.urls')),
     path('wildberries/', include('wildberries.urls'), name='wildberries'),
+    path('tradingpool/', include('tradingpool.urls')),
 ]

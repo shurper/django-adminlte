@@ -30,6 +30,22 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
     SECRET_KEY = ''.join(random.choice(string.ascii_lowercase) for i in range(32))
 
+# Получение API ключей из переменных окружения
+BINANCE_API_KEY = os.getenv('BINANCE_API_KEY')
+BINANCE_API_SECRET = os.getenv('BINANCE_API_SECRET')
+
+# Убедитесь, что они были получены корректно
+if not BINANCE_API_KEY or not BINANCE_API_SECRET:
+    raise ValueError("API ключи Binance не установлены в окружении")
+
+# Получение API ключей Bybit из переменных окружения
+BYBIT_API_KEY = os.getenv('BYBIT_API_KEY')
+BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET')
+
+# Убедитесь, что ключи существуют
+if not BYBIT_API_KEY or not BYBIT_API_SECRET:
+    raise ValueError("API ключи Bybit не установлены в окружении")
+
 # Enable/Disable DEBUG Mode
 DEBUG = str2bool(os.environ.get('DEBUG'))
 #print(' DEBUG -> ' + str(DEBUG) ) 
@@ -49,6 +65,8 @@ if RENDER_EXTERNAL_HOSTNAME:
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     'admin_adminlte.apps.AdminAdminlteConfig',
     "django.contrib.admin",
     "django.contrib.auth",
@@ -57,9 +75,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_celery_beat",
-    'corsheaders',
+    "rest_framework",
+    "corsheaders",
     "home",
     "wildberries",
+    "tradingpool",
+
 
 ]
 
@@ -126,6 +147,7 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = 'core.asgi.application'
 WSGI_APPLICATION = "core.wsgi.application"
 
 # Database
@@ -175,6 +197,14 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
@@ -209,7 +239,32 @@ STATICFILES_DIRS = (
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = '/'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Получаем тип среды
+DJANGO_ENV = os.environ.get("DJANGO_ENV", "development")  # Значение по умолчанию - development
+
+required_vars = ["EMAIL_HOST", "EMAIL_HOST_USER", "EMAIL_HOST_PASSWORD", "DEFAULT_FROM_EMAIL", "DEFAULT_TO_TEST_EMAIL"]
+for var in required_vars:
+    if os.environ.get(var) is None:
+        raise ValueError(f"Missing required environment variable: {var}")
+# Устанавливаем бэкенд для отправки писем в зависимости от типа среды
+if DJANGO_ENV == 'production':
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Настройки email для SMTP, если среда продакшн
+if DJANGO_ENV == 'production':
+    EMAIL_HOST = os.environ.get("EMAIL_HOST")
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"  # Преобразование строки в bool
+    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"  # Преобразование строки в bool
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+    DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
+    DEFAULT_TO_TEST_EMAIL = os.environ.get("DEFAULT_TO_TEST_EMAIL")
+
+
 
 # Включение отладочного вывода для базы данных в settings.py
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
@@ -279,7 +334,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'wildberries.tasks.delete_stale_tasks',
         'schedule': crontab(minute='*/10'),  # Каждые 10 минут
     },
-
+    'check_and_update_unknown_symbols': {
+        'task': 'tradingpool.tasks.check_and_update_unknown_symbols',
+        'schedule': crontab(minute='*/10'),  # Каждые 10 минут
+    },
 }
 
 CACHE_LOCATION_URL = os.getenv('CACHE_LOCATION_URL', 'redis://localhost:6379/0')
@@ -294,4 +352,18 @@ CACHES = {
             'CLIENT_CLASS': CACHE_CLIENT,
         }
     }
+}
+
+
+
+
+# Настройка канала
+CHANNEL_LAYERS = {
+    "default": {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [("127.0.0.1", 6379)],  # Убедитесь, что Redis запущен
+        # },
+    },
 }

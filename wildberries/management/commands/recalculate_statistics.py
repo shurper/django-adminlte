@@ -4,6 +4,7 @@ from wildberries.models import CampaignStatistic
 from datetime import timedelta
 
 # python manage.py recalculate_statistics
+#  sudo docker exec -it appseed_app python manage.py recalculate_statistics
 class Command(BaseCommand):
     help = 'Recalculates views, clicks, and sum per minute for existing CampaignStatistic records'
 
