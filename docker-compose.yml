@@ -3,8 +3,8 @@ version: "3.9"
 services:
   appseed-app:
     container_name: appseed_app
-    restart: always
     build: .
+    restart: always
     environment:
       DB_ENGINE: 'postgresql'
       DB_USERNAME: 'marketmetrika_user'
@@ -22,7 +22,7 @@ services:
     ports:
       - "8000:8000"  # Пробрасываем порт 8000, чтобы Nginx мог к нему подключиться
     command: >
-      sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate"  
+      sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate && python -m daphne -p 8000 core.asgi:application"  
 
   db:
     image: postgres:13

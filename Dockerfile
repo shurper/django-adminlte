@@ -20,6 +20,5 @@ COPY . .
 COPY wait_for_db.sh /wait_for_db.sh
 RUN chmod +x /wait_for_db.sh
 
-# Запускаем Daphne
-# Запускаем Daphne на порту 8000
-CMD ["daphne", "-p", "8000", "core.asgi:application"]
+# Указываем стандартный порт
+EXPOSE 8000
