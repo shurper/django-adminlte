@@ -20,5 +20,5 @@ COPY . .
 COPY wait_for_db.sh /wait_for_db.sh
 RUN chmod +x /wait_for_db.sh
 
-# gunicorn
-CMD ["gunicorn", "--config", "gunicorn-cfg.py", "core.wsgi"]
+# Запускаем Daphne
+CMD ["daphne", "-u", "/tmp/daphne.sock", "core.asgi:application"]

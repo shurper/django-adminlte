@@ -20,7 +20,7 @@ services:
       - db
       - redis  # Add redis dependency
     command: >
-      sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate && daphne -u /tmp/daphne.sock core.asgi:application --verbosity 2"  # Используем daphne
+      sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate"  
 
   db:
     image: postgres:13
