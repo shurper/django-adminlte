@@ -58,7 +58,8 @@
     let lastTimestamp = 0;  // Для хранения последней временной метки
 
     function connectWebSocket() {
-        socket = new WebSocket('ws://' + window.location.host + '/ws/candles/');
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socket = new WebSocket(protocol + window.location.host + '/ws/candles/');
         const timeframe = document.getElementById('timeframe').value;
 
         socket.onopen = function() {

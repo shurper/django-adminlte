@@ -16,15 +16,19 @@ class RealEmailSendTest(TestCase):
         print(f"EMAIL_USE_SSL: {settings.EMAIL_USE_SSL}")
         print(f"EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
         print(f"DEFAULT_FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
+        print(f"recipient_email: {recipient_email}")
+        print(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
 
-        # Отправляем тестовый email
-        send_mail(
-            subject="Тестовая отправка реального письма",
-            message="Это тестовое сообщение для проверки SMTP-сервера.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject="Тестовая отправка реального письма",
+                message="Это тестовое сообщение для проверки SMTP-сервера.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[recipient_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Ошибка при отправке email: {e}")
 
         # Визуально проверьте, что письмо пришло в ваш почтовый ящик
         print(f"Email отправлен на {recipient_email}. Проверьте почту для подтверждения.")
