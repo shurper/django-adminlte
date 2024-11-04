@@ -19,6 +19,8 @@ services:
     depends_on:
       - db
       - redis  # Add redis dependency
+    ports:
+      - "8000:8000"  # Пробрасываем порт 8000, чтобы Nginx мог к нему подключиться
     command: >
       sh -c "/wait_for_db.sh && python manage.py makemigrations && python manage.py migrate"  
 
