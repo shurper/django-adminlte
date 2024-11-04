@@ -3,8 +3,8 @@ from django.utils import timezone
 
 
 class OrderBook(models.Model):
-    exchange = models.CharField(max_length=255)
-    address = models.CharField(max_length=512)
+    exchange = models.CharField(max_length=255, )
+    address = models.CharField(max_length=512, null=True)
     symbol = models.CharField(max_length=32)
     symbol_type = models.CharField(max_length=255)
     start = models.BigIntegerField()
