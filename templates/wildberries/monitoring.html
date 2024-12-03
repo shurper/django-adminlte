@@ -1071,9 +1071,12 @@
     let chartUpdaterInProgress = false;
     setInterval(() => {
         if ($('#auto_update_switch').is(':checked')) {
-            if (chartUpdaterInProgress) return;
+            if (chartUpdaterInProgress) return true;
             chartUpdaterInProgress = true;
-            loadCharts().finally(() => {
+            loadCharts().then(() => {
+                chartUpdaterInProgress = false;
+            }).catch((error) => {
+                console.error('Error updating chart:', error);
                 chartUpdaterInProgress = false;
             });
         }
