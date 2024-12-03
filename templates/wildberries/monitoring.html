@@ -442,24 +442,26 @@
     let debounceTimeout = null;
 
     function updateChart() {
-        const timeInterval = $('#time_interval').val();
-        const dateRange = $('#date_range').val();
-        const destination = $('#destination').val();
-        const productId = $('#product_id').val();
-        const campaignId = '{{ campaign.id }}';
+    const timeInterval = $('#time_interval').val();
+    const dateRange = $('#date_range').val();
+    const destination = $('#destination').val();
+    const productId = $('#product_id').val();
+    const campaignId = '{{ campaign.id }}';
 
-        const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
-        const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
-        const today = moment().startOf('day');
-        if (autobidderChart) {
-            saveLegendVisibility(autobidderChart);
-        }
+    const cacheKey = `${timeInterval}_${dateRange}_${destination}_${productId}_${campaignId}`;
+    const [startDate, endDate] = dateRange.split(' - ').map(date => moment(date, 'DD-MM-YYYY'));
+    const today = moment().startOf('day');
+    if (autobidderChart) {
+        saveLegendVisibility(autobidderChart);
+    }
 
-        if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
-            console.log("Load from cache: " + dateRange);
-            renderChart(dataCache[cacheKey]);
-        } else {
-            clearTimeout(debounceTimeout);
+    if (dataCache[cacheKey] && endDate.isBefore(today, 'day')) {
+        console.log("Load from cache: " + dateRange);
+        renderChart(dataCache[cacheKey]);
+        return Promise.resolve();
+    } else {
+        clearTimeout(debounceTimeout);
+        return new Promise((resolve, reject) => {
             debounceTimeout = setTimeout(() => {
                 console.log("Load from server: " + dateRange);
                 $.ajax({
@@ -476,20 +478,24 @@
                     success: function (data) {
                         if (!data || !data.labels || !data.datasets) {
                             console.error('Invalid data received from the server');
+                            reject(new Error('Invalid data received from the server'));
                             return;
                         }
 
                         dataCache[cacheKey] = data;
                         renderChart(data);
                         updateWidgetData(data, timeInterval);
+                        resolve();
                     },
                     error: function (xhr, status, error) {
                         console.error('AJAX error:', status, error);
+                        reject(error);
                     }
                 });
             }, 500);
-        }
+        });
     }
+}
 
     Array.prototype.getLastElementMoreThanNull = function(stopIndex = 0) {
 
@@ -1061,13 +1067,15 @@
         if(this.dataset.ignore_me) return;
         loadCharts();
     });
+
     let chartUpdaterInProgress = false;
     setInterval(() => {
         if ($('#auto_update_switch').is(':checked')) {
-            if (chartUpdaterInProgress) return true;
+            if (chartUpdaterInProgress) return;
             chartUpdaterInProgress = true;
-            loadCharts();
-            chartUpdaterInProgress = false;
+            loadCharts().finally(() => {
+                chartUpdaterInProgress = false;
+            });
         }
     }, 10000);
 
