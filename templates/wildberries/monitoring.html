@@ -287,11 +287,20 @@
 
 
     // Fetch destinations and products dynamically
-    fetchDestinations();
-    fetchProducts();
+async function fetchDestinationsAndProducts() {
+    try {
+        await fetchDestinations();  // Ждем завершения fetchDestinations
+        await fetchProducts();      // После этого ждем fetchProducts
+        loadCharts();               // Вызываем loadCharts только после завершения обоих запросов
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
 
-    function fetchDestinations() {
-        // Fetch destinations from the server (replace with actual API endpoint)
+fetchDestinationsAndProducts();  // Запуск всех запросов
+
+async function fetchDestinations() {
+    return new Promise((resolve, reject) => {
         $.ajax({
             url: '{% url "api_get_destinations" %}',
             method: 'GET',
@@ -304,16 +313,17 @@
                         text: value.name
                     }));
                 });
-                setTimeout(() => {
-                    loadCharts();
-                }, 1000);
-
+                resolve(); // Успешное завершение fetchDestinations
+            },
+            error: function (xhr, status, error) {
+                reject(error); // Ошибка при выполнении запроса
             }
         });
-    }
+    });
+}
 
-    function fetchProducts() {
-        // Fetch products from the server (replace with actual API endpoint)
+async function fetchProducts() {
+    return new Promise((resolve, reject) => {
         $.ajax({
             url: '{% url "api_get_products" %}',
             method: 'GET',
@@ -327,12 +337,14 @@
                         text: value.name
                     }));
                 });
-                setTimeout(() => {
-                    loadCharts();
-                }, 1000);
+                resolve(); // Успешное завершение fetchProducts
+            },
+            error: function (xhr, status, error) {
+                reject(error); // Ошибка при выполнении запроса
             }
         });
-    }
+    });
+}
 
 
     function getCookie(name) {
@@ -1060,7 +1072,17 @@
 
 
     function loadCharts() {
-        updateChart();
+        if (chartUpdaterInProgress) return;
+        chartUpdaterInProgress = true;
+
+        updateChart()
+            .then(() => {
+                chartUpdaterInProgress = false;
+            })
+            .catch((error) => {
+                console.error('Error updating chart:', error);
+                chartUpdaterInProgress = false;
+            });
     }
 
     $('#ab_monitor').find('select, input').on('change', function () {
@@ -1071,14 +1093,7 @@
     let chartUpdaterInProgress = false;
     setInterval(() => {
         if ($('#auto_update_switch').is(':checked')) {
-            if (chartUpdaterInProgress) return true;
-            chartUpdaterInProgress = true;
-            loadCharts().then(() => {
-                chartUpdaterInProgress = false;
-            }).catch((error) => {
-                console.error('Error updating chart:', error);
-                chartUpdaterInProgress = false;
-            });
+            loadCharts();
         }
     }, 10000);
 
