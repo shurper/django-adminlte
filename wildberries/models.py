@@ -1006,6 +1006,12 @@ class AutoBidderLog(models.Model):
     advert_competitors = models.JSONField(verbose_name='advert_competitors', default=list)  # ID конкурентов
     bid = models.FloatField(null=True, blank=True)  # Текущая ставка автобиддера
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['destination'], name='destination_idx'),
+            models.Index(fields=['product_id'], name='product_id_idx'),
+        ]
+
     def current_user_has_access(self, request):
         """
         Проверяет, имеет ли текущий пользователь доступ к этому логу.
