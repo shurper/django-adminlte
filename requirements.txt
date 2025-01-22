@@ -40,3 +40,7 @@ ccxt
 daphne
 
 djangorestframework-simplejwt
+
+Pillow
+
+drf-yasg

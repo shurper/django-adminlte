@@ -40,7 +40,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"  # Проброс порта на хост
+      - "5437:5432"  # Проброс порта на хост
 
   redis:
     image: redis:latest
@@ -60,7 +60,7 @@ services:
       DB_USERNAME: 'marketmetrika_user'
       DB_PASS: 'your_password'
       DB_HOST: 'db'
-      DB_PORT: '5432'
+      DB_PORT: '5437'
       DB_NAME: 'marketmetrika_db'
       CELERY_BROKER_URL: 'redis://redis:6379/0'  # Add broker URL
     networks:
