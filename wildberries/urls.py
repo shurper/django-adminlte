@@ -1,5 +1,5 @@
 # wildberries/urls.py
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .views import edit_store, autobidder_view, observer_get_task, observer_report_position, api_get_chart_data, \
     api_get_destinations, api_get_products, api_get_stat_chart_data, monitoring_view, monitoring_additional_words_view, \

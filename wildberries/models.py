@@ -17,12 +17,26 @@ class Store(models.Model):
     wildberries_name = models.CharField(max_length=255, verbose_name='Название магазина в системе Wildberries',
                                         blank=True)
     wildberries_api_key = models.CharField(max_length=512, verbose_name='API ключ Wildberries')  # Увеличили размер поля
+    wildberries_api_status = models.CharField(max_length=10, null=True, blank=True, verbose_name='Статус API ключа Wildberries')
+    wildberries_api_status_details = models.TextField(null=True, blank=True)
+
     STATUS_CHOICES = (
         ('active', 'Активный'),
         ('inactive', 'Неактивный'),
     )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='inactive', verbose_name='Статус')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания в нашей системе')
+
+    ERROR_STATUSES = ['401', '400', '404']
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            old_instance = Store.objects.filter(pk=self.pk).first()
+            if old_instance and old_instance.wildberries_api_status != self.wildberries_api_status:
+                if self.wildberries_api_status in self.ERROR_STATUSES:
+                    self.status = 'inactive'
+
+        super().save(*args, **kwargs)
 
     def update_campaigns(self):
         from .tasks import fetch_and_save_campaigns
@@ -36,23 +50,21 @@ class Store(models.Model):
 
 
 class Campaign(models.Model):
-    STATUS_CHOICES = {
-        -1: "Кампания в процессе удаления",
-        4: "Готова к запуску",
-        7: "Кампания завершена",
-        8: "Отказался",
-        9: "Идут показы",
-        11: "Кампания на паузе"
-    }
+    class Status(models.IntegerChoices):
+        DELETING = -1, "Кампания в процессе удаления"
+        READY = 4, "Готова к запуску"
+        FINISHED = 7, "Кампания завершена"
+        DECLINED = 8, "Отказался"
+        ACTIVE = 9, "Идут показы"
+        PAUSED = 11, "Кампания на паузе"
 
-    TYPE_CHOICES = {
-        4: "кампания в каталоге",
-        5: "кампания в карточке товара",
-        6: "кампания в поиске",
-        7: "кампания в рекомендациях на главной странице",
-        8: "автоматическая кампания",
-        9: "поиск + каталог"
-    }
+    class Type(models.IntegerChoices):
+        CATALOG = 4, "кампания в каталоге"
+        PRODUCT_CARD = 5, "кампания в карточке товара"
+        SEARCH = 6, "кампания в поиске"
+        RECOMMENDATIONS = 7, "кампания в рекомендациях на главной странице"
+        AUTO = 8, "автоматическая кампания"
+        SEARCH_AND_CATALOG = 9, "поиск + каталог"
 
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, verbose_name='Название кампании')
@@ -63,15 +75,9 @@ class Campaign(models.Model):
     search_pluse_state = models.BooleanField(default=False, verbose_name='Состояние поиска Plus')
     daily_budget = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Дневной бюджет')
     advert_id = models.BigIntegerField(verbose_name='ID рекламы')
-    status = models.IntegerField(verbose_name='Статус')
-    type = models.IntegerField(verbose_name='Тип')
+    status = models.IntegerField(choices=Status.choices, verbose_name='Статус')
+    type = models.IntegerField(choices=Type.choices, verbose_name='Тип')
     payment_type = models.CharField(max_length=10, verbose_name='Тип оплаты')
-
-    def get_status_display(self):
-        return self.STATUS_CHOICES.get(self.status, "Неизвестный статус")
-
-    def get_type_display(self):
-        return self.TYPE_CHOICES.get(self.type, "Неизвестный тип")
 
     def is_active(self):
         return self.status == 9

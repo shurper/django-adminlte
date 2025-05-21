@@ -1,0 +1,21 @@
+{% extends 'layouts/base_content.html' %}
+{% load static %}
+{% block title %} Уведомления {% endblock title %}
+{% block extrastyle %}
+  <!-- дополнительные стили, если нужно -->
+{% endblock extrastyle %}
+
+
+{% block content %}
+<ul class="list-group">
+  {% for notif in notifications %}
+    <li class="list-group-item {% if notif.unread %}list-group-item-warning{% endif %}">
+      <strong>{{ notif.verb }}</strong> — {{ notif.description }}
+      <br>
+      <small>{{ notif.timestamp|date:"d M Y H:i" }}</small>
+    </li>
+  {% empty %}
+    <li class="list-group-item">Уведомлений нет.</li>
+  {% endfor %}
+</ul>
+{% endblock content %}

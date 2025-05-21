@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.db.models import Avg, Value, F, DecimalField, IntegerField
 from django.db.models import Sum, FloatField, ExpressionWrapper, Case, When
 from django.core.cache import cache
+from notifications.models import Notification
 
 from wildberries.forms import SignUpForm, StoreForm, PositionRangeForm, IntraDayScheduleForm, WeeklyScheduleForm, \
     CreateAutoBidderSettingsForm, CreateMonitoringSettingsForm, AddKeywordsMonitoringForm
@@ -545,6 +546,7 @@ def api_get_stat_chart_data(request):
         )
 
         return JsonResponse(data)
+    return None
 
 
 @login_required()
@@ -572,3 +574,5 @@ def api_get_products(request):
     products = AutoBidderLog.objects.filter(campaign=campaign).values_list('product_id', flat=True).distinct()
     data = [{'id': prod, 'name': f'Product {prod}'} for prod in products]
     return JsonResponse(data, safe=False)
+
+

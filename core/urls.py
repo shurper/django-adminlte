@@ -12,8 +12,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include('admin_adminlte.urls')),
     path('wildberries/', include('wildberries.urls'), name='wildberries'),
+    path('notification/', include('notification.urls'), name='notification'),
     path('tradingpool/', include('tradingpool.urls')),
-    path('api/flutterapp/', include('flutterapp.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

@@ -1,15 +1,17 @@
 # wildberries/utils.py
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import requests
 from django.utils import timezone
+from notifications.signals import notify
 
 from .models import Store, Campaign, Subject, Menu, UnitedParam, CampaignStatistic, PlatformStatistic, ProductStatistic, \
     Set, KeywordData, CampaignKeywordStatistic, AutoCampaignKeywordStatistic
+from .notifications import notify_wb
 
 
 def get_campaign_list(store):
-    url = 'https://advert-api.wb.ru/adv/v1/promotion/count'
+    url = 'https://advert-api.wildberries.ru/adv/v1/promotion/count'
     headers = {
         'accept': 'application/json',
         'Authorization': store.wildberries_api_key
@@ -20,11 +22,19 @@ def get_campaign_list(store):
     else:
         print(f'Token: {store.wildberries_api_key}')
         print(f'Error fetching campaign list: {response.json()}')
+        if response.status_code == 401:
+            notify_wb(
+                store.user,
+                store.user,
+                'Обновите API-ключ',
+                'Мы не смогли получить данные по вашему магазину по причине того, что Ваш API-ключ не работает. Пожалуйста обновите ключ в настройках магазина.',
+                {'store_id': store.id}
+            )
         return None
 
 
 def get_campaign_details(store, advert_ids):
-    url = 'https://advert-api.wb.ru/adv/v1/promotion/adverts?order=create&direction=asc'
+    url = 'https://advert-api.wildberries.ru/adv/v1/promotion/adverts?order=create&direction=asc'
     headers = {
         'accept': 'application/json',
         'Authorization': store.wildberries_api_key,
@@ -35,6 +45,14 @@ def get_campaign_details(store, advert_ids):
         return response.json()
     else:
         print(f'Error fetching campaign details: {response.json()}')
+        if response.status_code == 401:
+            notify_wb(
+                store.user,
+                store.user,
+                'Обновите API-ключ',
+                'Мы не смогли получить данные по вашему магазину по причине того, что Ваш API-ключ не работает. Пожалуйста обновите ключ в настройках магазина.',
+                {'store_id': store.id}
+            )
         return None
 
 
@@ -187,7 +205,7 @@ def fetch_and_save_campaigns(store_id):
 
 
 def get_campaign_statistics(store, advert_ids):
-    url = 'https://advert-api.wb.ru/adv/v2/fullstats'
+    url = 'https://advert-api.wildberries.ru/adv/v2/fullstats'
     headers = {
         'accept': 'application/json',
         'Authorization': store.wildberries_api_key,
@@ -206,6 +224,14 @@ def get_campaign_statistics(store, advert_ids):
         return response.json()
     else:
         print(f'Error fetching campaign statistics: {response.json()}')
+        if response.status_code == 401:
+            notify_wb(
+                store.user,
+                store.user,
+                'Обновите API-ключ',
+                'Мы не смогли получить данные по вашему магазину по причине того, что Ваш API-ключ не работает. Пожалуйста обновите ключ в настройках магазина.',
+                {'store_id': store.id}
+            )
         return None
 
 
@@ -281,7 +307,7 @@ def save_campaign_statistics(store):
 
 
 def get_keyword_statistics(store, campaign_id):
-    url = f'https://advert-api.wb.ru/adv/v1/stat/words?id={campaign_id}'
+    url = f'https://advert-api.wildberries.ru/adv/v1/stat/words?id={campaign_id}'
     headers = {
         'accept': 'application/json',
         'Authorization': store.wildberries_api_key,
@@ -290,37 +316,68 @@ def get_keyword_statistics(store, campaign_id):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f'Error fetching keyword statistics: {response.json()}')
+        print(f'Error fetching keyword statistics: {response.json()} response.status: {response.status_code}')
+        if response.status_code == 401:
+            notify_wb(
+                store.user,
+                store.user,
+                'Обновите API-ключ',
+                'Мы не смогли получить данные по вашему магазину по причине того, что Ваш API-ключ не работает. Пожалуйста обновите ключ в настройках магазина.',
+                {'store_id': store.id}
+            )
         return None
 
 
 def save_keyword_statistics(store):
-    campaigns = Campaign.objects.filter(store=store, type=9)
+    campaigns = Campaign.objects.filter(
+        store=store,
+        type__in=[Campaign.Type.SEARCH, Campaign.Type.SEARCH_AND_CATALOG],
+        status=Campaign.Status.ACTIVE
+    )
     for campaign in campaigns:
         statistics = get_keyword_statistics(store, campaign.advert_id)
-        if statistics:
+
+        if statistics and isinstance(statistics, dict) and 'words' in statistics:
             words_data = statistics['words']
-            KeywordData.objects.update_or_create(
-                campaign=campaign,
-                defaults={
-                    'phrase': words_data['phrase'],
-                    'strong': words_data['strong'],
-                    'excluded': words_data['excluded'],
-                    'pluse': words_data['pluse'],
-                    'fixed': words_data['fixed'],
-                }
-            )
-            for keyword_stat in words_data['keywords']:
-                CampaignKeywordStatistic.objects.create(
+
+            # Проверка на наличие нужных ключей в words_data
+            required_keys = ['phrase', 'strong', 'excluded', 'pluse', 'fixed', 'keywords']
+            if all(k in words_data for k in required_keys):
+                KeywordData.objects.update_or_create(
                     campaign=campaign,
-                    keyword=keyword_stat['keyword'],
-                    count=keyword_stat['count'],
-                    date_received=timezone.now()
+                    defaults={
+                        'phrase': words_data['phrase'],
+                        'strong': words_data['strong'],
+                        'excluded': words_data['excluded'],
+                        'pluse': words_data['pluse'],
+                        'fixed': words_data['fixed'],
+                    }
                 )
+
+                for keyword_stat in words_data['keywords']:
+                    if isinstance(keyword_stat, dict) and 'keyword' in keyword_stat and 'count' in keyword_stat:
+                        CampaignKeywordStatistic.objects.create(
+                            campaign=campaign,
+                            keyword=keyword_stat['keyword'],
+                            count=keyword_stat['count'],
+                            date_received=timezone.now()
+                        )
+                    else:
+                        print(f"Пропущена некорректная запись ключевых слов: {keyword_stat}")
+            else:
+                print(f"Отсутствуют обязательные ключи в words_data: {words_data}")
+        else:
+            print(f"Неверная структура ответа от API или данные отсутствуют: {statistics}")
 
 
 def get_auto_campaign_statistics(store, campaign_id):
-    url = f'https://advert-api.wb.ru/adv/v2/auto/daily-words?id={campaign_id}'
+    today = datetime.today().strftime('%Y-%m-%d')
+    yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+    url = (
+        f'https://advert-api.wildberries.ru/adv/v0/stats/keywords'
+        f'?advert_id={campaign_id}&from={yesterday}&to={today}'
+    )
+
     headers = {
         'accept': 'application/json',
         'Authorization': store.wildberries_api_key,
@@ -330,13 +387,22 @@ def get_auto_campaign_statistics(store, campaign_id):
         return response.json()
     else:
         print(f'Error fetching auto campaign statistics: {response.json()}')
+        if response.status_code == 401:
+            notify_wb(
+                store.user,
+                store.user,
+                'Обновите API-ключ',
+                'Мы не смогли получить данные по вашему магазину по причине того, что Ваш API-ключ не работает. Пожалуйста обновите ключ в настройках магазина.',
+                {'store_id': store.id}
+            )
+
         return None
 
 
 def update_bid(campaign, new_bid):
     return True
     response = requests.post(
-        'https://advert-api.wb.ru/adv/v0/cpm',
+        'https://advert-api.wildberries.ru/adv/v0/cpm',
         headers={'Authorization': f'Bearer {campaign.store.wildberries_api_key}'},
         json={
             'advertId': campaign.id,
@@ -350,21 +416,32 @@ def update_bid(campaign, new_bid):
 
 
 def save_auto_campaign_statistics(store):
-    campaigns = Campaign.objects.filter(store=store, type=8)
+    campaigns = Campaign.objects.filter(
+        store=store,
+        type=Campaign.Type.AUTO,
+        status=Campaign.Status.ACTIVE
+    )
     for campaign in campaigns:
         statistics = get_auto_campaign_statistics(store, campaign.advert_id)
-        if statistics:
-            for stat_day in statistics:
-                date_recorded = stat_day['date']
-                for stat in stat_day['stat']:
-                    AutoCampaignKeywordStatistic.objects.update_or_create(
-                        campaign=campaign,
-                        keyword=stat['keyword'],
-                        date_recorded=date_recorded,
-                        defaults={
-                            'views': stat['views'],
-                            'clicks': stat['clicks'],
-                            'ctr': stat['ctr'],
-                            'sum': stat['sum'],
-                        }
-                    )
+
+        if statistics and isinstance(statistics, dict) and 'keywords' in statistics:
+            for stat_item in statistics['keywords']:
+                # Пример структуры: {"date": "2024-08-10", "stat": [{...}, {...}]}
+                if isinstance(stat_item, dict) and 'date' in stat_item and 'stat' in stat_item:
+                    date_recorded = stat_item['date']
+                    for stat in stat_item['stat']:
+                        AutoCampaignKeywordStatistic.objects.update_or_create(
+                            campaign=campaign,
+                            keyword=stat['keyword'],
+                            date_recorded=date_recorded,
+                            defaults={
+                                'views': stat['views'],
+                                'clicks': stat['clicks'],
+                                'ctr': stat['ctr'],
+                                'sum': stat['sum'],
+                            }
+                        )
+                else:
+                    print(f"Некорректный элемент в 'keywords': {stat_item}")
+        else:
+            print(f"Неверная структура ответа от API: {statistics}")

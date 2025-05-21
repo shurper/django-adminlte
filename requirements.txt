@@ -44,3 +44,5 @@ djangorestframework-simplejwt
 Pillow
 
 drf-yasg
+
+django-notifications-hq

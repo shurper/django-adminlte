@@ -61,7 +61,7 @@
       </li>
 
       <!-- Messages Dropdown Menu -->
-      <li class="nav-item dropdown">
+      <li style="display:none;" class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-comments"></i>
           <span class="badge badge-danger navbar-badge">3</span>
@@ -120,31 +120,31 @@
       </li>
       <!-- Notifications Dropdown Menu -->
       <li class="nav-item dropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#">
-          <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <span class="dropdown-item dropdown-header">15 Notifications</span>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-envelope mr-2"></i> 4 new messages
-            <span class="float-right text-muted text-sm">3 mins</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-users mr-2"></i> 8 friend requests
-            <span class="float-right text-muted text-sm">12 hours</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-file mr-2"></i> 3 new reports
-            <span class="float-right text-muted text-sm">2 days</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-        </div>
-      </li>
+  <a class="nav-link" data-toggle="dropdown" href="#">
+    <i class="far fa-bell"></i>
+    {% if unread_notifications.count %}
+      <span class="badge badge-warning navbar-badge">{{ unread_notifications.count }}</span>
+    {% endif %}
+  </a>
+  <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+    <span class="dropdown-item dropdown-header">
+      {{ unread_notifications.count }} Уведомлений
+    </span>
+    <div class="dropdown-divider"></div>
+
+    {% for notif in unread_notifications %}
+      <a href="#" class="dropdown-item">
+        <i class="fas fa-bell mr-2"></i> {{ notif.verb }}
+        <span class="float-right text-muted text-sm">{{ notif.timestamp|timesince }} назад</span>
+      </a>
+      <div class="dropdown-divider"></div>
+    {% empty %}
+      <span class="dropdown-item dropdown-header">Нет новых уведомлений</span>
+    {% endfor %}
+
+    <a href="{% url 'notifications_all' %}" class="dropdown-item dropdown-footer">Все уведомления</a>
+  </div>
+</li>
       <li class="nav-item">
         <a class="nav-link" data-widget="fullscreen" href="#" role="button">
           <i class="fas fa-expand-arrows-alt"></i>
