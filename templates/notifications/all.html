@@ -1,16 +1,25 @@
 {% extends 'layouts/base_content.html' %}
 {% load static %}
 {% block title %} Уведомления {% endblock title %}
+
 {% block extrastyle %}
-  <!-- дополнительные стили, если нужно -->
+<!-- Если нужны стили — добавь сюда -->
 {% endblock extrastyle %}
 
-
 {% block content %}
-<ul class="list-group">
-  {% for notif in notifications %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <form method="post" action="{% url 'notifications_clear' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger btn-sm">Удалить все сообщения</button>
+  </form>
+</div>
+
+<ul class="list-group mb-4">
+  {% for notif in page_obj %}
     <li class="list-group-item {% if notif.unread %}list-group-item-warning{% endif %}">
-      <strong>{{ notif.verb }}</strong> — {{ notif.description }}
+      <strong>{{ notif.verb }}</strong> <br>
+      {{ notif.description }}
       <br>
       <small>{{ notif.timestamp|date:"d M Y H:i" }}</small>
     </li>
@@ -18,4 +27,39 @@
     <li class="list-group-item">Уведомлений нет.</li>
   {% endfor %}
 </ul>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Навигация по страницам">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Предыдущая">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Следующая">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
 {% endblock content %}

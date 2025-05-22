@@ -1,6 +1,9 @@
 
 import ipaddress
 from functools import wraps
+from hashlib import md5
+
+from django.core.cache import cache
 from django.http import HttpResponseForbidden
 
 
@@ -24,3 +27,22 @@ def localhost_only(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view
+
+
+def cache_for_user(timeout=60, key_prefix='cached'):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return func(request, *args, **kwargs)
+
+            key_data = f'{key_prefix}:{request.user.id}:{func.__name__}'
+            cache_key = md5(key_data.encode()).hexdigest()
+
+            result = cache.get(cache_key)
+            if result is None:
+                result = func(request, *args, **kwargs)
+                cache.set(cache_key, result, timeout)
+            return result
+        return wrapper
+    return decorator
