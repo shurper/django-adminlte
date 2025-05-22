@@ -13,9 +13,7 @@ class CachedUserFunction:
         return md5(key_data.encode()).hexdigest()
 
     def invalidate(self, user_id):
-
         cache_key = self.make_key(user_id)
-        print(f"DELETE CACHE KEY: {cache_key}")
         cache.delete(cache_key)
 
     def __call__(self, request, *args, **kwargs):
