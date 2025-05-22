@@ -3,7 +3,6 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 from str2bool import str2bool
-from celery import Celery
 from celery.schedules import crontab
 
 load_dotenv()  # take environment variables from .env.
@@ -114,7 +113,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-ALLOWED_HOSTS = ['www.wildberries.ru', 'wildberries.ru', '127.0.0.1', 'metrics.tonantis.com', 'localhost']
+ALLOWED_HOSTS = ['www.wildberries.ru', 'wildberries.ru', '127.0.0.1', 'metrics.tonantis.com', 'localhost', '188.225.39.197'] # move to env
 
 
 
@@ -255,8 +254,8 @@ else:
 if DJANGO_ENV == 'production':
     EMAIL_HOST = os.environ.get("EMAIL_HOST")
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
-    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"  # Преобразование строки в bool
-    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"  # Преобразование строки в bool
+    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
     DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
